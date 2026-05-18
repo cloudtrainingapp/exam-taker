@@ -7,10 +7,13 @@ import Dashboard from "./pages/superadmin/Dashboard";
 import Tenants from "./pages/superadmin/Tenants";
 import SuperAdminProtectedRoute from "./components/SuperAdminProtectedRoute";
 
+import AdminLayout from "./layouts/AdminLayout";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminSignup from "./pages/admin/AdminSignup";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminVerify from "./pages/admin/AdminVerify";
+import Quizzes from "./pages/admin/Quizzes";
+import QuizDetail from "./pages/admin/QuizDetail";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 
 import QuizLanding from "./pages/quiz/QuizLanding";
@@ -45,7 +48,11 @@ function TenantRoutes() {
       <Route path="/verify" element={<AdminVerify />} />
 
       <Route element={<AdminProtectedRoute />}>
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route element={<AdminLayout />}>
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/quizzes" element={<Quizzes />} />
+          <Route path="/admin/quizzes/:quizId" element={<QuizDetail />} />
+        </Route>
       </Route>
 
       <Route path="/t/:quizSlug" element={<QuizLanding />} />

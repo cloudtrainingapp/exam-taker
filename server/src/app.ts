@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { tenantResolver } from "./middleware/tenantResolver";
 import authRouter from "./routes/auth";
 import superAdminRouter from "./routes/superAdmin";
+import adminRouter from "./routes/admin";
 
 dotenv.config();
 
@@ -53,5 +54,8 @@ app.use("/api/auth", authRouter);
 
 // SuperAdmin — all routes require a SUPERADMIN JWT
 app.use("/api/superadmin", superAdminRouter);
+
+// Admin — all routes require an ADMIN JWT scoped to req.tenantId
+app.use("/api/admin", adminRouter);
 
 export default app;
