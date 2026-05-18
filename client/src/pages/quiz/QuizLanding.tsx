@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { CheckCircle2, Circle, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -205,33 +205,37 @@ export default function QuizLanding() {
 
           <h2 className="text-lg font-semibold text-foreground leading-snug mb-6">{q.text}</h2>
 
-          <div className="space-y-3">
+          <div className="space-y-3" role={q.type === "MULTIPLE_CHOICE" ? "radiogroup" : "group"}>
             {q.options.map((opt) => {
               const selected = currentAnswers.includes(opt.key);
+              const inputType = q.type === "MULTIPLE_CHOICE" ? "radio" : "checkbox";
+              const inputId = `q-${q.id}-${opt.key}`;
               return (
-                <button
+                <label
                   key={opt.key}
-                  onClick={() => toggleAnswer(q.id, opt.key, q.type)}
-                  className={`w-full flex items-start gap-4 rounded-xl border p-4 text-left transition-colors ${
+                  htmlFor={inputId}
+                  className={`flex cursor-pointer items-start gap-4 rounded-xl border p-4 transition-colors select-none ${
                     selected
                       ? "border-primary bg-primary/10"
-                      : "border-border bg-card hover:border-border/80 hover:bg-accent"
+                      : "border-border bg-card hover:border-primary/40 hover:bg-accent"
                   }`}
                 >
-                  <span className={`mt-0.5 flex-shrink-0 flex h-5 w-5 items-center justify-center rounded-full border text-xs font-bold transition-colors ${
-                    selected ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground"
-                  }`}>
+                  <input
+                    id={inputId}
+                    type={inputType}
+                    name={`question-${q.id}`}
+                    value={opt.key}
+                    checked={selected}
+                    onChange={() => toggleAnswer(q.id, opt.key, q.type)}
+                    className="mt-0.5 h-4 w-4 flex-shrink-0 accent-primary cursor-pointer"
+                  />
+                  <span className="flex-shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-border text-xs font-bold text-muted-foreground">
                     {opt.key}
                   </span>
                   <span className={`text-sm leading-relaxed ${selected ? "text-foreground" : "text-muted-foreground"}`}>
                     {opt.text}
                   </span>
-                  <span className="ml-auto flex-shrink-0 mt-0.5">
-                    {selected
-                      ? <CheckCircle2 className="h-4 w-4 text-primary" />
-                      : <Circle className="h-4 w-4 text-muted-foreground/40" />}
-                  </span>
-                </button>
+                </label>
               );
             })}
           </div>

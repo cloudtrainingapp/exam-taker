@@ -169,25 +169,33 @@ export default function AttemptResults() {
               {q.options.map((opt) => {
                 const wasSelected = q.submittedAnswers.includes(opt.key);
                 const isCorrect = q.correctAnswers.includes(opt.key);
+                const inputType = q.type === "MULTIPLE_CHOICE" ? "radio" : "checkbox";
 
                 let optCls = "border-border bg-muted/30 text-muted-foreground";
-                let keyCls = "border-border text-muted-foreground";
-
                 if (isCorrect && wasSelected) {
                   optCls = "border-emerald-500/50 bg-emerald-500/10 text-foreground";
-                  keyCls = "border-emerald-500 bg-emerald-500 text-white";
                 } else if (isCorrect) {
                   optCls = "border-emerald-500/30 bg-emerald-500/5 text-foreground";
-                  keyCls = "border-emerald-500/50 text-emerald-600 dark:text-emerald-400";
                 } else if (wasSelected) {
                   optCls = "border-destructive/50 bg-destructive/10 text-foreground";
-                  keyCls = "border-destructive bg-destructive text-white";
                 }
 
                 return (
                   <div key={opt.key} className={`rounded-lg border px-4 py-3 ${optCls}`}>
                     <div className="flex items-start gap-3">
-                      <span className={`flex-shrink-0 flex h-5 w-5 items-center justify-center rounded-full border text-xs font-bold ${keyCls}`}>
+                      <input
+                        type={inputType}
+                        readOnly
+                        checked={wasSelected}
+                        className={`mt-0.5 h-4 w-4 flex-shrink-0 cursor-default ${
+                          isCorrect && wasSelected
+                            ? "accent-emerald-500"
+                            : wasSelected
+                            ? "accent-destructive"
+                            : "accent-muted-foreground"
+                        }`}
+                      />
+                      <span className="flex-shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-current text-xs font-bold opacity-60">
                         {opt.key}
                       </span>
                       <div className="flex-1 min-w-0">

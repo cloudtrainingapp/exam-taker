@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ArrowLeft, Plus, Trash2, Pencil, Upload, Download,
-  ChevronRight, X, Check,
+  ChevronRight, X,
 } from "lucide-react";
 import Papa from "papaparse";
 import { api } from "@/lib/api";
@@ -250,9 +250,11 @@ function QuestionPanel({ quizId, editing, onSave, onClose }: QuestionPanelProps)
             {/* Options + correct answers */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Options & Correct Answer{form.type === "MULTI_SELECT" ? "s" : ""}</Label>
+                <Label>
+                  Options &amp; Correct Answer{form.type === "MULTI_SELECT" ? "s" : ""}
+                </Label>
                 <span className="text-xs text-muted-foreground">
-                  {form.type === "MULTIPLE_CHOICE" ? "Select one" : "Select all that apply"}
+                  {form.type === "MULTIPLE_CHOICE" ? "Mark the one correct answer" : "Mark all correct answers"}
                 </span>
               </div>
               <div className="space-y-2">
@@ -260,46 +262,39 @@ function QuestionPanel({ quizId, editing, onSave, onClose }: QuestionPanelProps)
                   const label = optionLabel(i);
                   const isCorrect = form.correct.has(label);
                   const hasValue = opt.trim().length > 0;
+                  const inputType = form.type === "MULTIPLE_CHOICE" ? "radio" : "checkbox";
                   return (
-                    <div key={i} className="flex items-start gap-2">
-                      <button
-                        type="button"
-                        disabled={!hasValue}
-                        onClick={() => hasValue && toggleCorrect(label)}
-                        className={`mt-2.5 flex-shrink-0 flex h-5 w-5 items-center justify-center rounded-full border transition-colors ${
-                          isCorrect
-                            ? "bg-emerald-500 border-emerald-500 text-white"
-                            : hasValue
-                            ? "border-border hover:border-foreground"
-                            : "border-muted cursor-not-allowed"
-                        }`}
-                        title={isCorrect ? "Correct answer" : "Mark as correct"}
-                      >
-                        {isCorrect && <Check className="h-3 w-3" />}
-                      </button>
-                      <div className="flex-1 space-y-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className="w-5 flex-shrink-0 text-xs font-medium text-muted-foreground">{label}.</span>
+                    <div key={i} className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type={inputType}
+                          name="correct-answer"
+                          checked={isCorrect}
+                          disabled={!hasValue}
+                          onChange={() => hasValue && toggleCorrect(label)}
+                          className="h-4 w-4 flex-shrink-0 accent-emerald-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-30"
+                          title={hasValue ? (isCorrect ? "Correct answer" : "Mark as correct") : "Enter option text first"}
+                        />
+                        <span className="w-5 flex-shrink-0 text-xs font-medium text-muted-foreground">{label}.</span>
+                        <Input
+                          type="text"
+                          value={opt}
+                          onChange={(e) => setOption(i, e.target.value)}
+                          placeholder={i < 2 ? `Option ${label} (required)` : `Option ${label} (optional)`}
+                          className="flex-1"
+                        />
+                      </div>
+                      {hasValue && (
+                        <div className="pl-11">
                           <Input
                             type="text"
-                            value={opt}
-                            onChange={(e) => setOption(i, e.target.value)}
-                            placeholder={i < 2 ? `Option ${label} (required)` : `Option ${label} (optional)`}
-                            className="flex-1"
+                            value={form.explanations[i]}
+                            onChange={(e) => setExplanation(i, e.target.value)}
+                            placeholder="Explanation for this option (optional)"
+                            className="text-xs h-8"
                           />
                         </div>
-                        {hasValue && (
-                          <div className="pl-7">
-                            <Input
-                              type="text"
-                              value={form.explanations[i]}
-                              onChange={(e) => setExplanation(i, e.target.value)}
-                              placeholder="Explanation for this option (optional)"
-                              className="text-xs h-8"
-                            />
-                          </div>
-                        )}
-                      </div>
+                      )}
                     </div>
                   );
                 })}
