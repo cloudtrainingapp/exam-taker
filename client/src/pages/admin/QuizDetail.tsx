@@ -2,10 +2,27 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ArrowLeft, Plus, Trash2, Pencil, Upload, Download,
-  ChevronLeft, ChevronRight, X, Check,
+  ChevronRight, X, Check,
 } from "lucide-react";
 import Papa from "papaparse";
-import { api } from "../../lib/api";
+import { api } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -40,13 +57,7 @@ function authHeader() {
 const OPTION_KEYS = ["option1", "option2", "option3", "option4", "option5", "option6"] as const;
 const EXPL_KEYS = ["explanation1", "explanation2", "explanation3", "explanation4", "explanation5", "explanation6"] as const;
 
-function correctSet(q: { correctAnswers: string }): Set<string> {
-  return new Set(q.correctAnswers.split(",").map((s) => s.trim()).filter(Boolean));
-}
-
 function optionLabel(idx: number) { return String.fromCharCode(65 + idx); }
-
-// ─── Empty question form ───────────────────────────────────────────────────────
 
 interface QuestionForm {
   text: string;
@@ -76,7 +87,7 @@ function formFromQuestion(q: Question): QuestionForm {
     type: q.type,
     options: OPTION_KEYS.map((k) => q[k] ?? ""),
     explanations: EXPL_KEYS.map((k) => q[k] ?? ""),
-    correct: correctSet(q),
+    correct: new Set(q.correctAnswers.split(",").map((s) => s.trim()).filter(Boolean)),
     overallExplanation: q.overallExplanation ?? "",
     domain: q.domain ?? "",
   };
@@ -95,7 +106,7 @@ function formToPayload(f: QuestionForm): Record<string, unknown> {
   return payload;
 }
 
-// ─── QuestionPanel ─────────────────────────────────────────────────────────────
+// ─── Question slide-over panel ─────────────────────────────────────────────────
 
 interface QuestionPanelProps {
   quizId: string;
@@ -121,7 +132,6 @@ function QuestionPanel({ quizId, editing, onSave, onClose }: QuestionPanelProps)
   function setOption(i: number, v: string) {
     const next = [...form.options];
     next[i] = v;
-    // if option cleared, remove from correct
     if (!v.trim()) {
       const label = optionLabel(i);
       const correct = new Set(form.correct);
@@ -139,11 +149,11 @@ function QuestionPanel({ quizId, editing, onSave, onClose }: QuestionPanelProps)
   }
 
   function toggleCorrect(label: string) {
-    const correct = new Set(form.correct);
     if (form.type === "MULTIPLE_CHOICE") {
       setForm((f) => ({ ...f, correct: new Set([label]) }));
       return;
     }
+    const correct = new Set(form.correct);
     if (correct.has(label)) correct.delete(label);
     else correct.add(label);
     setForm((f) => ({ ...f, correct }));
@@ -180,31 +190,28 @@ function QuestionPanel({ quizId, editing, onSave, onClose }: QuestionPanelProps)
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      {/* Backdrop */}
       <div className="flex-1 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-
-      {/* Panel */}
-      <div className="relative flex w-full max-w-xl flex-col bg-gray-950 border-l border-gray-800 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-800 px-6 py-4 flex-shrink-0">
-          <h2 className="text-sm font-semibold text-white">
+      <div className="relative flex w-full max-w-xl flex-col bg-background border-l border-border overflow-hidden">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4 flex-shrink-0">
+          <h2 className="text-sm font-semibold text-foreground">
             {editing ? "Edit Question" : "Add Question"}
           </h2>
-          <button onClick={onClose} className="rounded-md p-1 text-gray-500 hover:text-gray-200 hover:bg-gray-800 transition-colors">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
             <X className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
 
-        {/* Scrollable body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
           <div className="space-y-6 p-6">
             {error && (
-              <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
 
             {/* Type toggle */}
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-2">Question Type</label>
+            <div className="space-y-2">
+              <Label>Question Type</Label>
               <div className="flex gap-2">
                 {(["MULTIPLE_CHOICE", "MULTI_SELECT"] as const).map((t) => (
                   <button
@@ -217,8 +224,8 @@ function QuestionPanel({ quizId, editing, onSave, onClose }: QuestionPanelProps)
                     }}
                     className={`rounded-lg px-3.5 py-2 text-xs font-medium transition-colors border ${
                       form.type === t
-                        ? "bg-violet-600 border-violet-600 text-white"
-                        : "border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-600"
+                        ? "bg-primary border-primary text-primary-foreground"
+                        : "border-input text-muted-foreground hover:text-foreground hover:border-border"
                     }`}
                   >
                     {t === "MULTIPLE_CHOICE" ? "Single Answer" : "Multi Select"}
@@ -228,23 +235,23 @@ function QuestionPanel({ quizId, editing, onSave, onClose }: QuestionPanelProps)
             </div>
 
             {/* Question text */}
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">Question Text <span className="text-red-400">*</span></label>
-              <textarea
-                required value={form.text} onChange={(e) => setField("text", e.target.value)}
+            <div className="space-y-1.5">
+              <Label>Question Text <span className="text-destructive">*</span></Label>
+              <Textarea
+                required
+                value={form.text}
+                onChange={(e) => setField("text", e.target.value)}
                 rows={3}
-                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3.5 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition resize-none"
                 placeholder="Enter the question…"
+                className="resize-none"
               />
             </div>
 
             {/* Options + correct answers */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-medium text-gray-400">
-                  Options & Correct Answer{form.type === "MULTI_SELECT" ? "s" : ""}
-                </label>
-                <span className="text-xs text-gray-600">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Options & Correct Answer{form.type === "MULTI_SELECT" ? "s" : ""}</Label>
+                <span className="text-xs text-muted-foreground">
                   {form.type === "MULTIPLE_CHOICE" ? "Select one" : "Select all that apply"}
                 </span>
               </div>
@@ -263,32 +270,32 @@ function QuestionPanel({ quizId, editing, onSave, onClose }: QuestionPanelProps)
                           isCorrect
                             ? "bg-emerald-500 border-emerald-500 text-white"
                             : hasValue
-                            ? "border-gray-600 hover:border-gray-400"
-                            : "border-gray-800 cursor-not-allowed"
-                        } ${form.type === "MULTIPLE_CHOICE" ? "rounded-full" : "rounded"}`}
+                            ? "border-border hover:border-foreground"
+                            : "border-muted cursor-not-allowed"
+                        }`}
                         title={isCorrect ? "Correct answer" : "Mark as correct"}
                       >
                         {isCorrect && <Check className="h-3 w-3" />}
                       </button>
                       <div className="flex-1 space-y-1.5">
                         <div className="flex items-center gap-2">
-                          <span className="w-5 flex-shrink-0 text-xs font-medium text-gray-500">{label}.</span>
-                          <input
+                          <span className="w-5 flex-shrink-0 text-xs font-medium text-muted-foreground">{label}.</span>
+                          <Input
                             type="text"
                             value={opt}
                             onChange={(e) => setOption(i, e.target.value)}
                             placeholder={i < 2 ? `Option ${label} (required)` : `Option ${label} (optional)`}
-                            className="flex-1 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-600 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
+                            className="flex-1"
                           />
                         </div>
                         {hasValue && (
-                          <div className="flex items-center gap-2 pl-7">
-                            <input
+                          <div className="pl-7">
+                            <Input
                               type="text"
                               value={form.explanations[i]}
                               onChange={(e) => setExplanation(i, e.target.value)}
                               placeholder="Explanation for this option (optional)"
-                              className="flex-1 rounded-lg border border-gray-700/60 bg-gray-800/50 px-3 py-1.5 text-xs text-gray-300 placeholder-gray-600 outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/10 transition"
+                              className="text-xs h-8"
                             />
                           </div>
                         )}
@@ -300,38 +307,35 @@ function QuestionPanel({ quizId, editing, onSave, onClose }: QuestionPanelProps)
             </div>
 
             {/* Overall explanation */}
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">Overall Explanation</label>
-              <textarea
+            <div className="space-y-1.5">
+              <Label>Overall Explanation</Label>
+              <Textarea
                 value={form.overallExplanation}
                 onChange={(e) => setField("overallExplanation", e.target.value)}
                 rows={2}
                 placeholder="Shown after the user answers (optional)"
-                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3.5 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition resize-none"
+                className="resize-none"
               />
             </div>
 
             {/* Domain */}
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">Domain / Topic</label>
-              <input
-                type="text" value={form.domain} onChange={(e) => setField("domain", e.target.value)}
+            <div className="space-y-1.5">
+              <Label>Domain / Topic</Label>
+              <Input
+                type="text"
+                value={form.domain}
+                onChange={(e) => setField("domain", e.target.value)}
                 placeholder="e.g. Networking, Security (optional)"
-                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3.5 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
               />
             </div>
           </div>
 
           {/* Footer */}
-          <div className="sticky bottom-0 flex gap-3 border-t border-gray-800 bg-gray-950 px-6 py-4">
-            <button type="button" onClick={onClose}
-              className="flex-1 rounded-lg border border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-300 hover:bg-gray-800 transition-colors">
-              Cancel
-            </button>
-            <button type="submit" disabled={saving}
-              className="flex-1 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-500 disabled:opacity-50 transition-colors">
+          <div className="sticky bottom-0 flex gap-3 border-t border-border bg-background px-6 py-4">
+            <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={saving} className="flex-1">
               {saving ? "Saving…" : editing ? "Save Changes" : "Add Question"}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -339,7 +343,7 @@ function QuestionPanel({ quizId, editing, onSave, onClose }: QuestionPanelProps)
   );
 }
 
-// ─── CSV Import ────────────────────────────────────────────────────────────────
+// ─── CSV helpers ────────────────────────────────────────────────────────────────
 
 const CSV_TEMPLATE_HEADERS = [
   "Question", "Question Type",
@@ -421,7 +425,7 @@ function remapCsvRow(row: Record<string, string>): Record<string, unknown> {
   };
 }
 
-// ─── Main ──────────────────────────────────────────────────────────────────────
+// ─── Main component ─────────────────────────────────────────────────────────────
 
 export default function QuizDetail() {
   const { quizId } = useParams<{ quizId: string }>();
@@ -430,21 +434,16 @@ export default function QuizDetail() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  // Settings edit
   const [editSettings, setEditSettings] = useState(false);
   const [settingsTitle, setSettingsTitle] = useState("");
   const [settingsTotal, setSettingsTotal] = useState("10");
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
 
-  // Question panel
   const [panelOpen, setPanelOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
-
-  // Delete question
   const [deleteQuestionId, setDeleteQuestionId] = useState<string | null>(null);
 
-  // CSV import
   const fileRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
@@ -525,11 +524,8 @@ export default function QuizDetail() {
             rows,
             { headers: authHeader() }
           );
-
-          // Re-fetch to get real question IDs
           const refreshed = await api.get<Quiz>(`/admin/quizzes/${quiz.id}`, { headers: authHeader() });
           setQuiz(refreshed);
-
           alert(`Imported ${imported} question${imported !== 1 ? "s" : ""} successfully.`);
         } catch (err: unknown) {
           setImportError(err instanceof Error ? err.message : "Import failed");
@@ -545,14 +541,12 @@ export default function QuizDetail() {
     });
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────────
-
   if (loading) {
     return (
       <div className="p-8 space-y-4">
-        <div className="h-6 w-48 animate-pulse rounded bg-gray-800" />
-        <div className="h-32 animate-pulse rounded-xl bg-gray-800" />
-        <div className="h-64 animate-pulse rounded-xl bg-gray-800" />
+        <Skeleton className="h-6 w-48" />
+        <Skeleton className="h-32 w-full rounded-xl" />
+        <Skeleton className="h-64 w-full rounded-xl" />
       </div>
     );
   }
@@ -560,8 +554,8 @@ export default function QuizDetail() {
   if (notFound || !quiz) {
     return (
       <div className="flex min-h-full flex-col items-center justify-center p-8 gap-3">
-        <p className="text-sm text-gray-400">Quiz not found.</p>
-        <Link to="/admin/quizzes" className="text-sm text-violet-400 hover:text-violet-300 transition-colors">
+        <p className="text-sm text-muted-foreground">Quiz not found.</p>
+        <Link to="/admin/quizzes" className="text-sm text-primary hover:underline">
           ← Back to quizzes
         </Link>
       </div>
@@ -569,85 +563,75 @@ export default function QuizDetail() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-8 space-y-6">
       {/* Breadcrumb */}
-      <div className="mb-6 flex items-center gap-2 text-sm">
-        <Link to="/admin/quizzes" className="flex items-center gap-1 text-gray-500 hover:text-gray-300 transition-colors">
+      <div className="flex items-center gap-2 text-sm">
+        <Link to="/admin/quizzes" className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="h-3.5 w-3.5" /> Quizzes
         </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-gray-700" />
-        <span className="text-gray-300 font-medium">{quiz.title}</span>
+        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40" />
+        <span className="text-foreground font-medium">{quiz.title}</span>
       </div>
 
       {/* Settings card */}
-      <div className="mb-6 rounded-xl border border-gray-800 bg-gray-900 p-6">
-        {editSettings ? (
-          <form onSubmit={handleSaveSettings} className="space-y-4">
-            {settingsError && (
-              <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">{settingsError}</div>
-            )}
-            <div className="grid gap-4 sm:grid-cols-2">
+      <Card>
+        <CardContent className="p-6">
+          {editSettings ? (
+            <form onSubmit={handleSaveSettings} className="space-y-4">
+              {settingsError && (
+                <Alert variant="destructive"><AlertDescription>{settingsError}</AlertDescription></Alert>
+              )}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Title</Label>
+                  <Input type="text" required value={settingsTitle} onChange={(e) => setSettingsTitle(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Questions shown per attempt</Label>
+                  <Input type="number" required min={1} value={settingsTotal} onChange={(e) => setSettingsTotal(e.target.value)} />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button type="button" variant="outline" onClick={() => { setEditSettings(false); setSettingsError(null); setSettingsTitle(quiz.title); setSettingsTotal(String(quiz.totalQuestionsToDisplay)); }}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={savingSettings}>
+                  {savingSettings ? "Saving…" : "Save"}
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <div className="flex items-start justify-between">
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Title</label>
-                <input
-                  type="text" required value={settingsTitle} onChange={(e) => setSettingsTitle(e.target.value)}
-                  className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3.5 py-2.5 text-sm text-white outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
-                />
+                <h1 className="text-lg font-semibold text-foreground">{quiz.title}</h1>
+                <div className="mt-1.5 flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                  <Badge variant="secondary" className="font-mono text-xs">{quiz.slug}</Badge>
+                  <span>{quiz.questions.length} questions</span>
+                  <span>Shows {quiz.totalQuestionsToDisplay} per attempt</span>
+                  <span>{quiz._count.attempts} attempt{quiz._count.attempts !== 1 ? "s" : ""}</span>
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Questions shown per attempt</label>
-                <input
-                  type="number" required min={1} value={settingsTotal} onChange={(e) => setSettingsTotal(e.target.value)}
-                  className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3.5 py-2.5 text-sm text-white outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
-                />
-              </div>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setEditSettings(true)}>
+                <Pencil className="h-3 w-3" /> Edit
+              </Button>
             </div>
-            <div className="flex gap-3">
-              <button type="button" onClick={() => { setEditSettings(false); setSettingsError(null); setSettingsTitle(quiz.title); setSettingsTotal(String(quiz.totalQuestionsToDisplay)); }}
-                className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800 transition-colors">
-                Cancel
-              </button>
-              <button type="submit" disabled={savingSettings}
-                className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500 disabled:opacity-50 transition-colors">
-                {savingSettings ? "Saving…" : "Save"}
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-lg font-semibold text-white">{quiz.title}</h1>
-              <div className="mt-1.5 flex items-center gap-4 text-sm text-gray-500">
-                <span><code className="rounded bg-gray-800 px-1.5 py-0.5 text-xs text-gray-300">{quiz.slug}</code></span>
-                <span>{quiz.questions.length} questions</span>
-                <span>Shows {quiz.totalQuestionsToDisplay} per attempt</span>
-                <span>{quiz._count.attempts} attempt{quiz._count.attempts !== 1 ? "s" : ""}</span>
-              </div>
-            </div>
-            <button onClick={() => setEditSettings(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-400 hover:bg-gray-800 hover:text-gray-200 transition-colors">
-              <Pencil className="h-3 w-3" /> Edit
-            </button>
-          </div>
-        )}
-      </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Questions section */}
-      <div className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
-        {/* Toolbar */}
-        <div className="flex items-center justify-between border-b border-gray-800 px-6 py-4">
-          <h2 className="text-sm font-semibold text-white">
-            Questions <span className="ml-1.5 rounded-full bg-gray-800 px-2 py-0.5 text-xs text-gray-400">{quiz.questions.length}</span>
-          </h2>
+      <Card>
+        <CardHeader className="flex-row items-center justify-between border-b border-border pb-4">
+          <CardTitle className="text-sm font-semibold">
+            Questions{" "}
+            <Badge variant="secondary" className="ml-1.5">{quiz.questions.length}</Badge>
+          </CardTitle>
           <div className="flex items-center gap-2">
-            {importError && (
-              <span className="text-xs text-red-400">{importError}</span>
-            )}
-            <button onClick={downloadTemplate}
-              className="flex items-center gap-1.5 rounded-lg border border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-400 hover:bg-gray-800 hover:text-gray-200 transition-colors">
+            {importError && <span className="text-xs text-destructive">{importError}</span>}
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={downloadTemplate}>
               <Download className="h-3.5 w-3.5" /> Template
-            </button>
-            <label className={`flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-700 px-3 py-1.5 text-xs font-medium transition-colors ${importing ? "opacity-50 cursor-not-allowed text-gray-600" : "text-gray-400 hover:bg-gray-800 hover:text-gray-200"}`}>
+            </Button>
+            <label className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-input px-3 py-1.5 text-xs font-medium transition-colors ${importing ? "opacity-50 cursor-not-allowed text-muted-foreground" : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"}`}>
               <Upload className="h-3.5 w-3.5" />
               {importing ? "Importing…" : "Import CSV"}
               <input
@@ -655,76 +639,69 @@ export default function QuizDetail() {
                 disabled={importing} onChange={handleCsvUpload}
               />
             </label>
-            <button onClick={openAdd}
-              className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-500 transition-colors">
+            <Button size="sm" className="gap-1.5 text-xs" onClick={openAdd}>
               <Plus className="h-3.5 w-3.5" /> Add Question
-            </button>
+            </Button>
           </div>
-        </div>
+        </CardHeader>
 
         {quiz.questions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <p className="text-sm text-gray-500">No questions yet</p>
-            <button onClick={openAdd} className="mt-3 text-sm font-medium text-violet-400 hover:text-violet-300 transition-colors">
+          <CardContent className="flex flex-col items-center justify-center py-20">
+            <p className="text-sm text-muted-foreground">No questions yet</p>
+            <button onClick={openAdd} className="mt-3 text-sm font-medium text-primary hover:underline">
               Add your first question →
             </button>
-          </div>
+          </CardContent>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-800 text-left text-xs text-gray-500">
-                <th className="px-6 py-3 font-medium w-8">#</th>
-                <th className="px-6 py-3 font-medium">Question</th>
-                <th className="px-6 py-3 font-medium">Type</th>
-                <th className="px-6 py-3 font-medium">Answers</th>
-                <th className="px-6 py-3 font-medium">Domain</th>
-                <th className="px-6 py-3 font-medium" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-800">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-8">#</TableHead>
+                <TableHead>Question</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Answers</TableHead>
+                <TableHead>Domain</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {quiz.questions.map((q, idx) => (
-                <tr key={q.id} className="group hover:bg-white/[0.02] transition-colors">
-                  <td className="px-6 py-3.5 text-gray-600 tabular-nums text-xs">{idx + 1}</td>
-                  <td className="px-6 py-3.5 max-w-sm">
-                    <p className="text-gray-200 line-clamp-2 leading-snug">{q.text}</p>
-                  </td>
-                  <td className="px-6 py-3.5">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      q.type === "MULTIPLE_CHOICE"
-                        ? "bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20"
-                        : "bg-violet-500/10 text-violet-400 ring-1 ring-violet-500/20"
-                    }`}>
+                <TableRow key={q.id} className="group">
+                  <TableCell className="text-muted-foreground tabular-nums text-xs">{idx + 1}</TableCell>
+                  <TableCell className="max-w-sm">
+                    <p className="text-foreground line-clamp-2 leading-snug">{q.text}</p>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={q.type === "MULTIPLE_CHOICE" ? "secondary" : "default"} className="text-xs">
                       {q.type === "MULTIPLE_CHOICE" ? "Single" : "Multi"}
-                    </span>
-                  </td>
-                  <td className="px-6 py-3.5">
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
                     <div className="flex gap-1 flex-wrap">
                       {q.correctAnswers.split(",").map((a) => a.trim()).filter(Boolean).map((a) => (
-                        <span key={a} className="inline-flex h-5 w-5 items-center justify-center rounded bg-emerald-500/10 text-xs font-bold text-emerald-400 ring-1 ring-emerald-500/20">
+                        <span key={a} className="inline-flex h-5 w-5 items-center justify-center rounded bg-emerald-500/10 text-xs font-bold text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/20">
                           {a}
                         </span>
                       ))}
                     </div>
-                  </td>
-                  <td className="px-6 py-3.5 text-gray-500 text-xs">{q.domain ?? "—"}</td>
-                  <td className="px-6 py-3.5">
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-xs">{q.domain ?? "—"}</TableCell>
+                  <TableCell>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openEdit(q)}
-                        className="rounded-md p-1.5 text-gray-500 hover:bg-gray-800 hover:text-gray-200 transition-colors">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(q)}>
                         <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button onClick={() => setDeleteQuestionId(q.id)}
-                        className="rounded-md p-1.5 text-gray-600 hover:bg-red-500/10 hover:text-red-400 transition-colors">
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => setDeleteQuestionId(q.id)}>
                         <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      </Button>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
-      </div>
+      </Card>
 
       {/* Question slide-over */}
       {panelOpen && (
@@ -736,40 +713,19 @@ export default function QuizDetail() {
         />
       )}
 
-      {/* Delete question confirm */}
-      {deleteQuestionId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div className="w-full max-w-sm rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-2xl">
-            <h2 className="text-base font-semibold text-white mb-2">Delete question?</h2>
-            <p className="text-sm text-gray-400 mb-6">This cannot be undone.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setDeleteQuestionId(null)}
-                className="flex-1 rounded-lg border border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-300 hover:bg-gray-800 transition-colors">
-                Cancel
-              </button>
-              <button onClick={() => handleDeleteQuestion(deleteQuestionId)}
-                className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-500 transition-colors">
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Pagination placeholder for future use */}
-      {quiz.questions.length > 0 && (
-        <div className="mt-4 flex items-center justify-between text-xs text-gray-600">
-          <span>{quiz.questions.length} question{quiz.questions.length !== 1 ? "s" : ""} total</span>
-          <div className="flex items-center gap-1">
-            <button disabled className="rounded-md p-1.5 text-gray-700 disabled:cursor-not-allowed">
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </button>
-            <button disabled className="rounded-md p-1.5 text-gray-700 disabled:cursor-not-allowed">
-              <ChevronRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Delete question dialog */}
+      <Dialog open={!!deleteQuestionId} onOpenChange={(open) => { if (!open) setDeleteQuestionId(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete question?</DialogTitle>
+            <DialogDescription>This cannot be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteQuestionId(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => deleteQuestionId && handleDeleteQuestion(deleteQuestionId)}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

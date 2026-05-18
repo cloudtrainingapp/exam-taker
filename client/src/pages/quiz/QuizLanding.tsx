@@ -1,9 +1,15 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { CheckCircle2, Circle, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
-import { api } from "../../lib/api";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { api } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface QuizMeta {
   title: string;
@@ -25,8 +31,6 @@ interface QuizQuestion {
 }
 
 type Stage = "register" | "taking" | "submitting";
-
-// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function QuizLanding() {
   const { quizSlug } = useParams<{ quizSlug: string }>();
@@ -97,15 +101,14 @@ export default function QuizLanding() {
   const answeredCount = questions.filter((q) => (answers[q.id] ?? []).length > 0).length;
   const isLast = current === totalQ - 1;
   const currentAnswers = q ? (answers[q.id] ?? []) : [];
-
-  // ── Loading / error ───────────────────────────────────────────────────────
+  const progressPercent = totalQ > 0 ? ((current + 1) / totalQ) * 100 : 0;
 
   if (metaError) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-950 p-6">
+      <div className="flex min-h-screen items-center justify-center bg-background p-6">
         <div className="text-center">
-          <p className="text-lg font-semibold text-white mb-2">Quiz not found</p>
-          <p className="text-sm text-gray-500">{metaError}</p>
+          <p className="text-lg font-semibold text-foreground mb-2">Quiz not found</p>
+          <p className="text-sm text-muted-foreground">{metaError}</p>
         </div>
       </div>
     );
@@ -113,21 +116,22 @@ export default function QuizLanding() {
 
   if (!meta) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-950">
-        <Loader2 className="h-6 w-6 animate-spin text-violet-400" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
 
-  // ── Register screen ───────────────────────────────────────────────────────
-
   if (stage === "register") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-950 p-6">
+      <div className="relative flex min-h-screen flex-col items-center justify-center bg-background p-6">
+        <div className="absolute right-4 top-4">
+          <ThemeToggle />
+        </div>
         <div className="w-full max-w-md">
           <div className="mb-8 text-center">
-            <h1 className="text-2xl font-bold text-white mb-2">{meta.title}</h1>
-            <p className="text-sm text-gray-500">
+            <h1 className="text-2xl font-bold text-foreground mb-2">{meta.title}</h1>
+            <p className="text-sm text-muted-foreground">
               {meta.totalQuestionsToDisplay} questions
               {meta.questionCount > meta.totalQuestionsToDisplay
                 ? ` · randomly selected from ${meta.questionCount}`
@@ -135,89 +139,71 @@ export default function QuizLanding() {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-8">
-            <h2 className="text-base font-semibold text-white mb-6">Enter your details to begin</h2>
-            <form onSubmit={handleStart} className="space-y-4">
-              {startError && (
-                <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                  {startError}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Enter your details to begin</CardTitle>
+              <CardDescription>Your results will be saved to this profile.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleStart} className="space-y-4">
+                {startError && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{startError}</AlertDescription>
+                  </Alert>
+                )}
+                <div className="space-y-1.5">
+                  <Label>Full Name</Label>
+                  <Input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Smith" />
                 </div>
-              )}
-              <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Full Name</label>
-                <input
-                  type="text" required value={name} onChange={(e) => setName(e.target.value)}
-                  placeholder="Jane Smith"
-                  className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3.5 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Email Address</label>
-                <input
-                  type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                  placeholder="jane@example.com"
-                  className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3.5 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full rounded-lg bg-violet-600 py-2.5 text-sm font-semibold text-white hover:bg-violet-500 transition-colors mt-2"
-              >
-                Start Quiz
-              </button>
-            </form>
-          </div>
+                <div className="space-y-1.5">
+                  <Label>Email Address</Label>
+                  <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jane@example.com" />
+                </div>
+                <Button type="submit" className="w-full mt-2">Start Quiz</Button>
+              </form>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
   }
 
-  // ── Submitting spinner ────────────────────────────────────────────────────
-
   if (stage === "submitting") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-950">
-        <Loader2 className="h-8 w-8 animate-spin text-violet-400" />
-        <p className="text-sm text-gray-400">Submitting your answers…</p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Submitting your answers…</p>
       </div>
     );
   }
 
-  // ── Quiz taking ───────────────────────────────────────────────────────────
-
   return (
-    <div className="flex min-h-screen flex-col bg-gray-950">
-      {/* Header / progress */}
-      <header className="border-b border-gray-800 bg-gray-900 px-6 py-4">
+    <div className="flex min-h-screen flex-col bg-background">
+      {/* Header */}
+      <header className="border-b border-border bg-card px-6 py-4">
         <div className="mx-auto max-w-2xl">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-white">{meta.title}</span>
-            <span className="text-xs text-gray-500 tabular-nums">
-              {answeredCount} / {totalQ} answered
-            </span>
+            <span className="text-sm font-medium text-foreground">{meta.title}</span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {answeredCount} / {totalQ} answered
+              </span>
+              <ThemeToggle />
+            </div>
           </div>
-          <div className="h-1.5 w-full rounded-full bg-gray-800 overflow-hidden">
-            <div
-              className="h-full rounded-full bg-violet-500 transition-all duration-300"
-              style={{ width: `${((current + 1) / totalQ) * 100}%` }}
-            />
-          </div>
-          <p className="mt-1.5 text-xs text-gray-600">Question {current + 1} of {totalQ}</p>
+          <Progress value={progressPercent} className="h-1.5" />
+          <p className="mt-1.5 text-xs text-muted-foreground">Question {current + 1} of {totalQ}</p>
         </div>
       </header>
 
       {/* Question body */}
       <main className="flex-1 overflow-y-auto px-6 py-8">
         <div className="mx-auto max-w-2xl">
-          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 mb-4 ${
-            q.type === "MULTIPLE_CHOICE"
-              ? "bg-blue-500/10 text-blue-400 ring-blue-500/20"
-              : "bg-violet-500/10 text-violet-400 ring-violet-500/20"
-          }`}>
+          <Badge variant={q.type === "MULTIPLE_CHOICE" ? "secondary" : "default"} className="mb-4">
             {q.type === "MULTIPLE_CHOICE" ? "Single answer" : "Select all that apply"}
-          </span>
+          </Badge>
 
-          <h2 className="text-lg font-semibold text-white leading-snug mb-6">{q.text}</h2>
+          <h2 className="text-lg font-semibold text-foreground leading-snug mb-6">{q.text}</h2>
 
           <div className="space-y-3">
             {q.options.map((opt) => {
@@ -228,22 +214,22 @@ export default function QuizLanding() {
                   onClick={() => toggleAnswer(q.id, opt.key, q.type)}
                   className={`w-full flex items-start gap-4 rounded-xl border p-4 text-left transition-colors ${
                     selected
-                      ? "border-violet-500 bg-violet-500/10"
-                      : "border-gray-700 bg-gray-900 hover:border-gray-600 hover:bg-gray-800"
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-card hover:border-border/80 hover:bg-accent"
                   }`}
                 >
                   <span className={`mt-0.5 flex-shrink-0 flex h-5 w-5 items-center justify-center rounded-full border text-xs font-bold transition-colors ${
-                    selected ? "border-violet-500 bg-violet-500 text-white" : "border-gray-600 text-gray-500"
+                    selected ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground"
                   }`}>
                     {opt.key}
                   </span>
-                  <span className={`text-sm leading-relaxed ${selected ? "text-white" : "text-gray-300"}`}>
+                  <span className={`text-sm leading-relaxed ${selected ? "text-foreground" : "text-muted-foreground"}`}>
                     {opt.text}
                   </span>
                   <span className="ml-auto flex-shrink-0 mt-0.5">
                     {selected
-                      ? <CheckCircle2 className="h-4 w-4 text-violet-400" />
-                      : <Circle className="h-4 w-4 text-gray-700" />}
+                      ? <CheckCircle2 className="h-4 w-4 text-primary" />
+                      : <Circle className="h-4 w-4 text-muted-foreground/40" />}
                   </span>
                 </button>
               );
@@ -253,15 +239,11 @@ export default function QuizLanding() {
       </main>
 
       {/* Navigation footer */}
-      <footer className="border-t border-gray-800 bg-gray-900 px-6 py-4">
+      <footer className="border-t border-border bg-card px-6 py-4">
         <div className="mx-auto max-w-2xl flex items-center justify-between gap-4">
-          <button
-            onClick={() => setCurrent((c) => Math.max(0, c - 1))}
-            disabled={current === 0}
-            className="flex items-center gap-1.5 rounded-lg border border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-300 hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
+          <Button variant="outline" onClick={() => setCurrent((c) => Math.max(0, c - 1))} disabled={current === 0}>
             <ChevronLeft className="h-4 w-4" /> Previous
-          </button>
+          </Button>
 
           {/* Dot navigator */}
           <div className="flex items-center gap-1.5 flex-wrap justify-center">
@@ -274,10 +256,10 @@ export default function QuizLanding() {
                   onClick={() => setCurrent(i)}
                   className={`rounded-full transition-all ${
                     isCurrent
-                      ? "h-2.5 w-2.5 bg-violet-400"
+                      ? "h-2.5 w-2.5 bg-primary"
                       : answered
-                      ? "h-2 w-2 bg-violet-600"
-                      : "h-2 w-2 bg-gray-700 hover:bg-gray-500"
+                      ? "h-2 w-2 bg-primary/60"
+                      : "h-2 w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
                   }`}
                   title={`Question ${i + 1}${answered ? " (answered)" : ""}`}
                 />
@@ -286,19 +268,11 @@ export default function QuizLanding() {
           </div>
 
           {isLast ? (
-            <button
-              onClick={handleSubmit}
-              className="rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-500 transition-colors"
-            >
-              Submit Quiz
-            </button>
+            <Button onClick={handleSubmit}>Submit Quiz</Button>
           ) : (
-            <button
-              onClick={() => setCurrent((c) => Math.min(totalQ - 1, c + 1))}
-              className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-500 transition-colors"
-            >
+            <Button onClick={() => setCurrent((c) => Math.min(totalQ - 1, c + 1))}>
               Next <ChevronRight className="h-4 w-4" />
-            </button>
+            </Button>
           )}
         </div>
       </footer>

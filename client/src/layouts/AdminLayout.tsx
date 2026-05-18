@@ -1,6 +1,8 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { LayoutDashboard, BookOpen, BarChart3, Settings, GraduationCap, LogOut } from "lucide-react";
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { Button } from "@/components/ui/button";
 
 const NAV = [
   { to: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -20,17 +22,17 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-950 overflow-hidden">
+    <div className="flex h-screen bg-background overflow-hidden">
       {/* Sidebar */}
-      <aside className="flex w-60 flex-shrink-0 flex-col border-r border-gray-800 bg-gray-900">
+      <aside className="flex w-60 flex-shrink-0 flex-col border-r border-border bg-sidebar">
         {/* Brand */}
-        <div className="flex items-center gap-2.5 px-5 py-5 border-b border-gray-800">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600/20 ring-1 ring-violet-500/30">
-            <GraduationCap className="h-4 w-4 text-violet-400" />
+        <div className="flex items-center gap-2.5 px-5 py-5 border-b border-border">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20 ring-1 ring-primary/30">
+            <GraduationCap className="h-4 w-4 text-primary" />
           </div>
           <div className="leading-tight min-w-0">
-            <p className="text-sm font-semibold text-white truncate capitalize">{workspace}</p>
-            <p className="text-xs text-gray-500">Admin Portal</p>
+            <p className="text-sm font-semibold text-foreground truncate capitalize">{workspace}</p>
+            <p className="text-xs text-muted-foreground">Admin Portal</p>
           </div>
         </div>
 
@@ -41,11 +43,11 @@ export default function AdminLayout() {
               key={to}
               to={to}
               className={({ isActive }) =>
-                clsx(
+                cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-violet-600/15 text-violet-400"
-                    : "text-gray-400 hover:bg-white/5 hover:text-gray-200"
+                    ? "bg-primary/15 text-primary"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 )
               }
             >
@@ -55,22 +57,28 @@ export default function AdminLayout() {
           ))}
         </nav>
 
-        {/* Logout */}
-        <div className="border-t border-gray-800 p-3">
-          <button
+        {/* Bottom */}
+        <div className="border-t border-border p-3 space-y-1">
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 text-muted-foreground"
             onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-400 hover:bg-white/5 hover:text-gray-200 transition-colors"
           >
             <LogOut className="h-4 w-4" />
             Sign out
-          </button>
+          </Button>
         </div>
       </aside>
 
       {/* Main */}
-      <main className="flex-1 overflow-y-auto">
-        <Outlet />
-      </main>
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <header className="flex h-14 items-center justify-end border-b border-border px-6">
+          <ThemeToggle />
+        </header>
+        <main className="flex-1 overflow-y-auto">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

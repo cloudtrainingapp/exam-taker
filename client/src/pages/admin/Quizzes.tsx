@@ -1,7 +1,23 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Trash2, ChevronRight, BookOpen } from "lucide-react";
-import { api } from "../../lib/api";
+import { api } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 interface Quiz {
   id: string;
@@ -66,131 +82,140 @@ export default function Quizzes() {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="p-8 space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-white">Quizzes</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{quizzes.length} total</p>
+          <h1 className="text-xl font-semibold text-foreground">Quizzes</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{quizzes.length} total</p>
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500 transition-colors"
-        >
+        <Button onClick={() => setShowCreate(true)}>
           <Plus className="h-4 w-4" /> New Quiz
-        </button>
+        </Button>
       </div>
 
-      <div className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
+      <Card>
         {loading ? (
-          <div className="space-y-3 p-6">
-            {[...Array(3)].map((_, i) => <div key={i} className="h-14 animate-pulse rounded-lg bg-gray-800" />)}
-          </div>
+          <CardContent className="space-y-3 pt-6">
+            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
+          </CardContent>
         ) : quizzes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <BookOpen className="h-8 w-8 text-gray-700 mb-3" />
-            <p className="text-sm text-gray-500">No quizzes yet</p>
-            <button onClick={() => setShowCreate(true)} className="mt-3 text-sm font-medium text-violet-400 hover:text-violet-300 transition-colors">
+          <CardContent className="flex flex-col items-center justify-center py-20">
+            <BookOpen className="h-8 w-8 text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground">No quizzes yet</p>
+            <button onClick={() => setShowCreate(true)} className="mt-3 text-sm font-medium text-primary hover:underline transition-colors">
               Create your first quiz →
             </button>
-          </div>
+          </CardContent>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-800 text-left text-xs text-gray-500">
-                <th className="px-6 py-3 font-medium">Title</th>
-                <th className="px-6 py-3 font-medium">Slug</th>
-                <th className="px-6 py-3 font-medium text-center">Questions</th>
-                <th className="px-6 py-3 font-medium text-center">Shows</th>
-                <th className="px-6 py-3 font-medium text-center">Attempts</th>
-                <th className="px-6 py-3 font-medium">Created</th>
-                <th className="px-6 py-3 font-medium" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-800">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>Slug</TableHead>
+                <TableHead className="text-center">Questions</TableHead>
+                <TableHead className="text-center">Shows</TableHead>
+                <TableHead className="text-center">Attempts</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {quizzes.map((q) => (
-                <tr key={q.id} className="group hover:bg-white/[0.02] transition-colors">
-                  <td className="px-6 py-3.5">
-                    <Link to={`/admin/quizzes/${q.id}`} className="font-medium text-white hover:text-violet-400 transition-colors">
+                <TableRow key={q.id} className="group">
+                  <TableCell>
+                    <Link to={`/admin/quizzes/${q.id}`} className="font-medium text-foreground hover:text-primary transition-colors">
                       {q.title}
                     </Link>
-                  </td>
-                  <td className="px-6 py-3.5">
-                    <code className="rounded bg-gray-800 px-2 py-0.5 text-xs text-gray-300">{q.slug}</code>
-                  </td>
-                  <td className="px-6 py-3.5 text-center text-gray-400">{q._count.questions}</td>
-                  <td className="px-6 py-3.5 text-center text-gray-400">{q.totalQuestionsToDisplay}</td>
-                  <td className="px-6 py-3.5 text-center text-gray-400">{q._count.attempts}</td>
-                  <td className="px-6 py-3.5 text-gray-500">{new Date(q.createdAt).toLocaleDateString()}</td>
-                  <td className="px-6 py-3.5">
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="font-mono text-xs">{q.slug}</Badge>
+                  </TableCell>
+                  <TableCell className="text-center text-muted-foreground">{q._count.questions}</TableCell>
+                  <TableCell className="text-center text-muted-foreground">{q.totalQuestionsToDisplay}</TableCell>
+                  <TableCell className="text-center text-muted-foreground">{q._count.attempts}</TableCell>
+                  <TableCell className="text-muted-foreground">{new Date(q.createdAt).toLocaleDateString()}</TableCell>
+                  <TableCell>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Link to={`/admin/quizzes/${q.id}`} className="rounded-md p-1.5 text-gray-500 hover:bg-gray-800 hover:text-gray-200 transition-colors">
-                        <ChevronRight className="h-4 w-4" />
+                      <Link to={`/admin/quizzes/${q.id}`}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7">
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
                       </Link>
-                      <button onClick={() => setDeleteId(q.id)} className="rounded-md p-1.5 text-gray-600 hover:bg-red-500/10 hover:text-red-400 transition-colors">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => setDeleteId(q.id)}>
                         <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      </Button>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
-      </div>
+      </Card>
 
-      {/* Create modal */}
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div className="w-full max-w-md rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-2xl">
-            <h2 className="text-base font-semibold text-white mb-5">New Quiz</h2>
-            <form onSubmit={handleCreate} className="space-y-4">
-              {createError && (
-                <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">{createError}</div>
-              )}
-              <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Title</label>
-                <input
-                  type="text" required value={title} onChange={(e) => setTitle(e.target.value)}
-                  className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3.5 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
-                  placeholder="AWS Solutions Architect Practice"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Questions shown per attempt</label>
-                <input
-                  type="number" required min={1} value={total} onChange={(e) => setTotal(e.target.value)}
-                  className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3.5 py-2.5 text-sm text-white outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
-                />
-                <p className="mt-1.5 text-xs text-gray-600">A random subset of this size is shown each time.</p>
-              </div>
-              <div className="flex gap-3 pt-1">
-                <button type="button" onClick={() => { setShowCreate(false); setCreateError(null); }}
-                  className="flex-1 rounded-lg border border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-300 hover:bg-gray-800 transition-colors">
-                  Cancel
-                </button>
-                <button type="submit" disabled={creating}
-                  className="flex-1 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-500 disabled:opacity-50 transition-colors">
-                  {creating ? "Creating…" : "Create"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Delete confirm */}
-      {deleteId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div className="w-full max-w-sm rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-2xl">
-            <h2 className="text-base font-semibold text-white mb-2">Delete quiz?</h2>
-            <p className="text-sm text-gray-400 mb-6">All questions and attempt records will be permanently deleted.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setDeleteId(null)} className="flex-1 rounded-lg border border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-300 hover:bg-gray-800 transition-colors">Cancel</button>
-              <button onClick={() => handleDelete(deleteId)} className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-500 transition-colors">Delete</button>
+      {/* Create dialog */}
+      <Dialog open={showCreate} onOpenChange={(open) => { setShowCreate(open); if (!open) setCreateError(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Quiz</DialogTitle>
+            <DialogDescription>Create a new quiz for your workspace.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreate} className="space-y-4 mt-2">
+            {createError && (
+              <Alert variant="destructive">
+                <AlertDescription>{createError}</AlertDescription>
+              </Alert>
+            )}
+            <div className="space-y-1.5">
+              <Label htmlFor="quiz-title">Title</Label>
+              <Input
+                id="quiz-title"
+                type="text"
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="AWS Solutions Architect Practice"
+              />
             </div>
-          </div>
-        </div>
-      )}
+            <div className="space-y-1.5">
+              <Label htmlFor="quiz-total">Questions shown per attempt</Label>
+              <Input
+                id="quiz-total"
+                type="number"
+                required
+                min={1}
+                value={total}
+                onChange={(e) => setTotal(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">A random subset of this size is shown each time.</p>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => { setShowCreate(false); setCreateError(null); }}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={creating}>
+                {creating ? "Creating…" : "Create"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirm dialog */}
+      <Dialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete quiz?</DialogTitle>
+            <DialogDescription>
+              All questions and attempt records will be permanently deleted. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteId(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => deleteId && handleDelete(deleteId)}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

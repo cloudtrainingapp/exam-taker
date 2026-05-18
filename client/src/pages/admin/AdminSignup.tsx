@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api } from "../../lib/api";
+import { GraduationCap, CheckCircle2 } from "lucide-react";
+import { api } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface FormState {
   name: string;
@@ -40,135 +47,130 @@ export default function AdminSignup() {
 
   if (success) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-        <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-            <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900">Check your email</h2>
-          <p className="mt-2 text-sm text-gray-500">
-            We sent a verification link to <strong>{form.email}</strong>. Click it to activate your
-            admin account.
-          </p>
-          <button
-            onClick={() => navigate("/admin/login")}
-            className="mt-6 w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
-          >
-            Go to Login
-          </button>
+      <div className="relative flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="absolute right-4 top-4">
+          <ThemeToggle />
         </div>
+        <Card className="w-full max-w-md text-center">
+          <CardContent className="pt-8 pb-8">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/20">
+              <CheckCircle2 className="h-7 w-7 text-emerald-500" />
+            </div>
+            <h2 className="text-xl font-semibold text-foreground">Check your email</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              We sent a verification link to <strong>{form.email}</strong>. Click it to activate your admin account.
+            </p>
+            <Button className="mt-6 w-full" onClick={() => navigate("/admin/login")}>
+              Go to Login
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="absolute right-4 top-4">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Create your workspace</h1>
-          <p className="mt-1 text-sm text-gray-500">Set up your admin account and quiz portal.</p>
+        <div className="mb-8 flex flex-col items-center text-center">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/20 ring-1 ring-primary/30">
+            <GraduationCap className="h-6 w-6 text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">Create your workspace</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Set up your admin account and quiz portal.</p>
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200 space-y-5"
-        >
-          {error && (
-            <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
-              {error}
-            </div>
-          )}
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base">Get started</CardTitle>
+            <CardDescription>Fill in the details to create your workspace.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
 
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1.5">
-              Full name
-            </label>
-            <input
-              id="name"
-              name="name"
-              type="text"
-              required
-              autoComplete="name"
-              value={form.name}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition"
-              placeholder="Jane Smith"
-            />
-          </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="name">Full name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  required
+                  autoComplete="name"
+                  value={form.name}
+                  onChange={handleChange}
+                  placeholder="Jane Smith"
+                />
+              </div>
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
-              Email address
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              autoComplete="email"
-              value={form.email}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition"
-              placeholder="jane@company.com"
-            />
-          </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="email">Email address</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="jane@company.com"
+                />
+              </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              autoComplete="new-password"
-              minLength={8}
-              value={form.password}
-              onChange={handleChange}
-              className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition"
-              placeholder="Minimum 8 characters"
-            />
-          </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  autoComplete="new-password"
+                  minLength={8}
+                  value={form.password}
+                  onChange={handleChange}
+                  placeholder="Minimum 8 characters"
+                />
+              </div>
 
-          <div>
-            <label htmlFor="subdomain" className="block text-sm font-medium text-gray-700 mb-1.5">
-              Workspace subdomain
-            </label>
-            <div className="flex rounded-lg border border-gray-300 overflow-hidden focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 transition">
-              <input
-                id="subdomain"
-                name="subdomain"
-                type="text"
-                required
-                value={form.subdomain}
-                onChange={handleChange}
-                className="flex-1 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none bg-white"
-                placeholder="acme"
-              />
-              <span className="flex items-center bg-gray-50 px-3.5 text-sm text-gray-400 border-l border-gray-300 whitespace-nowrap">
-                .quiz.cloudtraining.net
-              </span>
-            </div>
-          </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="subdomain">Workspace subdomain</Label>
+                <div className="flex rounded-lg border border-input bg-background overflow-hidden focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-shadow">
+                  <input
+                    id="subdomain"
+                    name="subdomain"
+                    type="text"
+                    required
+                    value={form.subdomain}
+                    onChange={handleChange}
+                    className="flex-1 min-w-0 px-3 py-2 text-sm text-foreground bg-transparent outline-none placeholder:text-muted-foreground"
+                    placeholder="acme"
+                  />
+                  <span className="flex items-center bg-muted px-3 text-sm text-muted-foreground border-l border-input whitespace-nowrap">
+                    .quiz.app
+                  </span>
+                </div>
+              </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60 transition-colors"
-          >
-            {loading ? "Creating workspace…" : "Create workspace"}
-          </button>
+              <Button type="submit" disabled={loading} className="w-full">
+                {loading ? "Creating workspace…" : "Create workspace"}
+              </Button>
 
-          <p className="text-center text-sm text-gray-500">
-            Already have an account?{" "}
-            <Link to="/admin/login" className="font-medium text-indigo-600 hover:underline">
-              Sign in
-            </Link>
-          </p>
-        </form>
+              <p className="text-center text-sm text-muted-foreground">
+                Already have an account?{" "}
+                <Link to="/admin/login" className="font-medium text-primary hover:underline">
+                  Sign in
+                </Link>
+              </p>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
