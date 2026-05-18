@@ -35,11 +35,38 @@ interface AttemptResult {
   results: QuestionResult[];
 }
 
+function scoreTier(score: number) {
+  if (score >= 90) return {
+    message: "Excellent Work! Superb Performance!",
+    badgeVariant: "success" as const,
+    ringColor: "#10b981",
+    bannerCls: "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300",
+  };
+  if (score >= 75) return {
+    message: "Great Job! You have passed cleanly!",
+    badgeVariant: "warning" as const,
+    ringColor: "#eab308",
+    bannerCls: "bg-yellow-500/10 border-yellow-500/30 text-yellow-700 dark:text-yellow-300",
+  };
+  if (score >= 60) return {
+    message: "Good Effort! You've qualified!",
+    badgeVariant: "orange" as const,
+    ringColor: "#f97316",
+    bannerCls: "bg-orange-500/10 border-orange-500/30 text-orange-700 dark:text-orange-300",
+  };
+  return {
+    message: "Better luck next time.",
+    badgeVariant: "destructive" as const,
+    ringColor: "#ef4444",
+    bannerCls: "bg-destructive/10 border-destructive/30 text-destructive",
+  };
+}
+
 function ScoreRing({ score }: { score: number }) {
   const r = 40;
   const circ = 2 * Math.PI * r;
   const fill = (score / 100) * circ;
-  const color = score >= 80 ? "#10b981" : score >= 60 ? "#f59e0b" : "#ef4444";
+  const color = score >= 90 ? "#10b981" : score >= 75 ? "#eab308" : score >= 60 ? "#f97316" : "#ef4444";
 
   return (
     <div className="relative inline-flex items-center justify-center">
@@ -91,7 +118,7 @@ export default function AttemptResults() {
     );
   }
 
-  const scoreBadge = data.score >= 80 ? "success" : data.score >= 60 ? "warning" : "destructive";
+  const tier = scoreTier(data.score);
 
   return (
     <div className="min-h-screen bg-background pb-16">
@@ -117,11 +144,15 @@ export default function AttemptResults() {
               </div>
               <div className="h-10 w-px bg-border" />
               <div>
-                <Badge variant={scoreBadge} className="text-base font-bold px-3 py-1">
+                <Badge variant={tier.badgeVariant} className="text-base font-bold px-3 py-1">
                   {data.score.toFixed(1)}%
                 </Badge>
                 <p className="text-xs text-muted-foreground mt-0.5">Score</p>
               </div>
+            </div>
+
+            <div className={`mt-5 rounded-lg border px-4 py-2.5 text-sm font-medium ${tier.bannerCls}`}>
+              {tier.message}
             </div>
 
             <Link to={`/t/${quizSlug}`}>

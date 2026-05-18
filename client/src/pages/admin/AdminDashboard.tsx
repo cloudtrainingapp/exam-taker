@@ -48,9 +48,10 @@ function authHeader() {
   return { Authorization: `Bearer ${localStorage.getItem("admin_token")}` };
 }
 
-function scoreBadgeVariant(score: number): "success" | "warning" | "destructive" {
-  if (score >= 80) return "success";
-  if (score >= 60) return "warning";
+function scoreBadgeVariant(score: number): "success" | "warning" | "orange" | "destructive" {
+  if (score >= 90) return "success";
+  if (score >= 75) return "warning";
+  if (score >= 60) return "orange";
   return "destructive";
 }
 
