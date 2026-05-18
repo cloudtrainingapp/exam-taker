@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Plus, Trash2, ChevronRight, BookOpen } from "lucide-react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ function authHeader() {
 }
 
 export default function Quizzes() {
+  const navigate = useNavigate();
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -121,12 +122,12 @@ export default function Quizzes() {
             </TableHeader>
             <TableBody>
               {quizzes.map((q) => (
-                <TableRow key={q.id} className="group">
-                  <TableCell>
-                    <Link to={`/admin/quizzes/${q.id}`} className="font-medium text-foreground hover:text-primary transition-colors">
-                      {q.title}
-                    </Link>
-                  </TableCell>
+                <TableRow
+                  key={q.id}
+                  className="cursor-pointer"
+                  onClick={() => navigate(`/admin/quizzes/${q.id}`)}
+                >
+                  <TableCell className="font-medium text-foreground">{q.title}</TableCell>
                   <TableCell>
                     <Badge variant="secondary" className="font-mono text-xs">{q.slug}</Badge>
                   </TableCell>
@@ -134,11 +135,11 @@ export default function Quizzes() {
                   <TableCell className="text-center text-muted-foreground">{q.totalQuestionsToDisplay}</TableCell>
                   <TableCell className="text-center text-muted-foreground">{q._count.attempts}</TableCell>
                   <TableCell className="text-muted-foreground">{new Date(q.createdAt).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-2">
                       <Link to={`/admin/quizzes/${q.id}`}>
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <ChevronRight className="h-4 w-4" />
+                        <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5">
+                          View Details <ChevronRight className="h-3 w-3" />
                         </Button>
                       </Link>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => setDeleteId(q.id)}>
