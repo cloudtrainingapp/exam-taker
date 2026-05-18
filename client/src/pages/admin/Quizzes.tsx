@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Trash2, ChevronRight, BookOpen } from "lucide-react";
+import { Plus, Trash2, ChevronRight, BookOpen, Check, Copy } from "lucide-react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,16 @@ export default function Quizzes() {
   const [createError, setCreateError] = useState<string | null>(null);
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
+
+  function copyQuizLink(e: React.MouseEvent, slug: string) {
+    e.stopPropagation();
+    const url = `${window.location.origin}/t/${slug}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedSlug(slug);
+      setTimeout(() => setCopiedSlug(null), 1500);
+    });
+  }
 
   useEffect(() => { fetchQuizzes(); }, []);
 
@@ -129,7 +139,18 @@ export default function Quizzes() {
                 >
                   <TableCell className="font-medium text-foreground">{q.title}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary" className="font-mono text-xs">{q.slug}</Badge>
+                    <button
+                      onClick={(e) => copyQuizLink(e, q.slug)}
+                      className="group inline-flex items-center gap-1.5"
+                      title="Copy quiz link"
+                    >
+                      <Badge variant="secondary" className="font-mono text-xs group-hover:bg-secondary/80 transition-colors">
+                        {q.slug}
+                      </Badge>
+                      {copiedSlug === q.slug
+                        ? <Check className="h-3 w-3 text-emerald-500 flex-shrink-0" />
+                        : <Copy className="h-3 w-3 text-muted-foreground/50 opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity" />}
+                    </button>
                   </TableCell>
                   <TableCell className="text-center text-muted-foreground">{q._count.questions}</TableCell>
                   <TableCell className="text-center text-muted-foreground">{q.totalQuestionsToDisplay}</TableCell>
