@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserType {
+  SUPERADMIN
+  ADMIN
+  USER
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  MULTI_SELECT
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String?
+  userType     UserType
+  isVerified   Boolean  @default(false)
+  tenantId     String?
+  createdAt    DateTime @default(now())
+
+  tenant   Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  attempts Attempt[]
+}
+
+model Tenant {
+  id                String   @id @default(cuid())
+  name              String
+  subdomain         String   @unique
+  customDomain      String?  @unique
+  isDomainVerified  Boolean  @default(false)
+  supportEmail      String
+  emailSubject      String?
+  emailTemplate     String?  @db.Text
+  sendEmailToggle   Boolean  @default(true)
+  createdAt         DateTime @default(now())
+
+  users    User[]
+  quizzes  Quiz[]
+  attempts Attempt[]
+}
+
+model Quiz {
+  id                      String   @id @default(cuid())
+  tenantId                String
+  title                   String
+  slug                    String
+  totalQuestionsToDisplay Int
+  createdAt               DateTime @default(now())
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  questions Question[]
+  attempts  Attempt[]
+
+  @@unique([tenantId, slug])
+}
+
+model Question {
+  id                 String       @id @default(cuid())
+  quizId             String
+  text               String       @db.Text
+  type               QuestionType
+  option1            String?
+  option2            String?
+  option3            String?
+  option4            String?
+  option5            String?
+  option6            String?
+  explanation1       String?      @db.Text
+  explanation2       String?      @db.Text
+  explanation3       String?      @db.Text
+  explanation4       String?      @db.Text
+  explanation5       String?      @db.Text
+  explanation6       String?      @db.Text
+  correctAnswers     String
+  overallExplanation String       @db.Text
+  domain             String?
+
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+}
+
+model Attempt {
+  id             String   @id @default(cuid())
+  userId         String
+  quizId         String
+  tenantId       String
+  slug           String   @unique
+  score          Float
+  totalCorrect   Int
+  totalQuestions Int
+  createdAt      DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
