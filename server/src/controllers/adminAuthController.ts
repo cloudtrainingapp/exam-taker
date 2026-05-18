@@ -47,30 +47,33 @@ export async function adminSignup(req: Request, res: Response): Promise<void> {
 
   const normalizedEmail = email.toLowerCase().trim();
 
-  const [takenSubdomain, takenEmail] = await Promise.all([
+  const [existingTenant, takenEmail] = await Promise.all([
     prisma.tenant.findUnique({ where: { subdomain } }),
     prisma.user.findUnique({ where: { email: normalizedEmail } }),
   ]);
 
-  if (takenSubdomain) {
-    res.status(409).json({ error: { code: "SUBDOMAIN_TAKEN", message: "That subdomain is already taken" } });
-    return;
-  }
   if (takenEmail) {
     res.status(409).json({ error: { code: "EMAIL_TAKEN", message: "An account with this email already exists" } });
     return;
   }
 
+  // If a tenant already exists (reserved by superadmin), allow claiming it
+  // only when no admin has signed up for it yet.
+  if (existingTenant) {
+    const claimedAdmin = await prisma.user.findFirst({
+      where: { tenantId: existingTenant.id, userType: "ADMIN" },
+    });
+    if (claimedAdmin) {
+      res.status(409).json({ error: { code: "SUBDOMAIN_TAKEN", message: "That subdomain is already taken" } });
+      return;
+    }
+  }
+
   const passwordHash = await bcrypt.hash(password, 12);
 
   const { user, tenant } = await prisma.$transaction(async (tx) => {
-    const tenant = await tx.tenant.create({
-      data: {
-        name: subdomain,
-        subdomain,
-        supportEmail: normalizedEmail,
-        sendEmailToggle: true,
-      },
+    const tenant = existingTenant ?? await tx.tenant.create({
+      data: { name: subdomain, subdomain, supportEmail: normalizedEmail, sendEmailToggle: true },
     });
     const user = await tx.user.create({
       data: {

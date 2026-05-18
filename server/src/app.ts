@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { tenantResolver } from "./middleware/tenantResolver";
 import authRouter from "./routes/auth";
+import superAdminRouter from "./routes/superAdmin";
 
 dotenv.config();
 
@@ -49,5 +50,8 @@ app.get("/api/health", (_req, res) => {
 
 // Auth (signup / verify / login — no additional auth middleware needed)
 app.use("/api/auth", authRouter);
+
+// SuperAdmin — all routes require a SUPERADMIN JWT
+app.use("/api/superadmin", superAdminRouter);
 
 export default app;

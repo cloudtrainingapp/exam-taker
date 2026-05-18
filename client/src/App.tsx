@@ -3,7 +3,8 @@ import { SUPERADMIN_DEV_HOST, SUPERADMIN_HOST } from "./lib/constants";
 
 import SuperAdminLayout from "./pages/superadmin/SuperAdminLayout";
 import SuperAdminLogin from "./pages/superadmin/Login";
-import TenantsPage from "./pages/superadmin/TenantsPage";
+import Dashboard from "./pages/superadmin/Dashboard";
+import Tenants from "./pages/superadmin/Tenants";
 import SuperAdminProtectedRoute from "./components/SuperAdminProtectedRoute";
 
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -27,7 +28,8 @@ function SuperAdminRoutes() {
       <Route path="/superadmin/login" element={<SuperAdminLogin />} />
       <Route element={<SuperAdminProtectedRoute />}>
         <Route element={<SuperAdminLayout />}>
-          <Route index element={<TenantsPage />} />
+          <Route index element={<Dashboard />} />
+          <Route path="/tenants" element={<Tenants />} />
         </Route>
       </Route>
       <Route path="*" element={<NotFound />} />
@@ -38,17 +40,14 @@ function SuperAdminRoutes() {
 function TenantRoutes() {
   return (
     <Routes>
-      {/* Public auth */}
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin/signup" element={<AdminSignup />} />
       <Route path="/verify" element={<AdminVerify />} />
 
-      {/* Protected admin */}
       <Route element={<AdminProtectedRoute />}>
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
       </Route>
 
-      {/* Public quiz */}
       <Route path="/t/:quizSlug" element={<QuizLanding />} />
       <Route path="/t/:quizSlug/:attemptSlug" element={<AttemptResults />} />
 
