@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ArrowLeft, Plus, Trash2, Pencil, Upload, Download,
-  ChevronRight, X,
+  ChevronRight, X, Code2, Check, Copy,
 } from "lucide-react";
 import Papa from "papaparse";
 import { api } from "@/lib/api";
@@ -443,6 +443,19 @@ export default function QuizDetail() {
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
 
+  const [showEmbed, setShowEmbed] = useState(false);
+  const [embedCopied, setEmbedCopied] = useState(false);
+
+  function copyEmbedCode() {
+    if (!quiz) return;
+    const src = `${window.location.origin}/t/${quiz.slug}`;
+    const code = `<iframe\n  src="${src}"\n  width="100%"\n  height="700"\n  style="border:none;border-radius:12px;"\n  allow="clipboard-write"\n></iframe>\n<script>\nwindow.addEventListener('message', function(e) {\n  if (e.data?.type === 'quiz-resize') {\n    document.querySelector('iframe[src^="${src}"]').style.height = e.data.height + 'px';\n  }\n});\n<\\/script>`;
+    navigator.clipboard.writeText(code).then(() => {
+      setEmbedCopied(true);
+      setTimeout(() => setEmbedCopied(false), 1500);
+    });
+  }
+
   useEffect(() => {
     if (!quizId) return;
     api.get<Quiz>(`/admin/quizzes/${quizId}`, { headers: authHeader() })
@@ -606,9 +619,14 @@ export default function QuizDetail() {
                   <span>{quiz._count.attempts} attempt{quiz._count.attempts !== 1 ? "s" : ""}</span>
                 </div>
               </div>
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setEditSettings(true)}>
-                <Pencil className="h-3 w-3" /> Edit
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowEmbed(true)}>
+                  <Code2 className="h-3 w-3" /> Embed
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setEditSettings(true)}>
+                  <Pencil className="h-3 w-3" /> Edit
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
@@ -718,6 +736,44 @@ export default function QuizDetail() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteQuestionId(null)}>Cancel</Button>
             <Button variant="destructive" onClick={() => deleteQuestionId && handleDeleteQuestion(deleteQuestionId)}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Embed dialog */}
+      <Dialog open={showEmbed} onOpenChange={setShowEmbed}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Embed Quiz</DialogTitle>
+            <DialogDescription>
+              Paste this snippet into any webpage to embed the quiz in an iframe. The iframe height auto-adjusts via postMessage.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg border border-border bg-muted/50 p-4 font-mono text-xs leading-relaxed text-foreground whitespace-pre overflow-x-auto">
+{`<iframe
+  src="${window.location.origin}/t/${quiz?.slug}"
+  width="100%"
+  height="700"
+  style="border:none;border-radius:12px;"
+  allow="clipboard-write"
+></iframe>
+<script>
+window.addEventListener('message', function(e) {
+  if (e.data?.type === 'quiz-resize') {
+    document.querySelector(
+      'iframe[src^="${window.location.origin}/t/${quiz?.slug}"]'
+    ).style.height = e.data.height + 'px';
+  }
+});
+</script>`}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEmbed(false)}>Close</Button>
+            <Button onClick={copyEmbedCode} className="gap-1.5">
+              {embedCopied
+                ? <><Check className="h-3.5 w-3.5" /> Copied!</>
+                : <><Copy className="h-3.5 w-3.5" /> Copy Code</>}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

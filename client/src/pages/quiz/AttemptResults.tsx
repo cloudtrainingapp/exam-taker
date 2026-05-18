@@ -99,6 +99,16 @@ export default function AttemptResults() {
       .catch((err: unknown) => setError(err instanceof Error ? err.message : "Failed to load results"));
   }, [quizSlug, attemptSlug]);
 
+  useEffect(() => {
+    if (window.parent === window) return;
+    const send = () =>
+      window.parent.postMessage({ type: "quiz-resize", height: document.body.scrollHeight }, "*");
+    const ro = new ResizeObserver(send);
+    ro.observe(document.body);
+    send();
+    return () => ro.disconnect();
+  }, []);
+
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-6">
@@ -124,20 +134,20 @@ export default function AttemptResults() {
     <div className="min-h-screen bg-background pb-16">
       {/* Score summary */}
       <div className="border-b border-border bg-card">
-        <div className="mx-auto max-w-2xl px-6 py-10">
+        <div className="mx-auto max-w-2xl px-4 sm:px-6 py-8 sm:py-10">
           <div className="flex justify-end mb-4">
             <ThemeToggle />
           </div>
           <div className="text-center">
             <ScoreRing score={data.score} />
-            <h1 className="mt-5 text-xl font-bold text-foreground">{data.quizTitle}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <h1 className="mt-5 text-lg sm:text-xl font-bold text-foreground">{data.quizTitle}</h1>
+            <p className="mt-1 text-xs sm:text-sm text-muted-foreground break-all">
               {data.user.name} · {data.user.email}
             </p>
 
-            <div className="mt-6 flex items-center justify-center gap-8">
+            <div className="mt-6 flex items-center justify-center gap-6 sm:gap-8">
               <div>
-                <p className="text-3xl font-bold text-foreground tabular-nums">
+                <p className="text-2xl sm:text-3xl font-bold text-foreground tabular-nums">
                   {data.totalCorrect}/{data.totalQuestions}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">Correct</p>
@@ -156,14 +166,14 @@ export default function AttemptResults() {
             </div>
 
             <Link to={`/t/${quizSlug}`}>
-              <Button className="mt-8">Retake Quiz</Button>
+              <Button className="mt-6 sm:mt-8 w-full sm:w-auto">Retake Quiz</Button>
             </Link>
           </div>
         </div>
       </div>
 
       {/* Per-question breakdown */}
-      <div className="mx-auto max-w-2xl px-6 pt-8 space-y-6">
+      <div className="mx-auto max-w-2xl px-4 sm:px-6 pt-6 sm:pt-8 space-y-4 sm:space-y-6">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
           Question Review
         </h2>
@@ -176,7 +186,7 @@ export default function AttemptResults() {
             }`}
           >
             {/* Question header */}
-            <div className={`flex items-start gap-3 px-5 py-4 border-b ${
+            <div className={`flex items-start gap-3 px-4 sm:px-5 py-3 sm:py-4 border-b ${
               q.isCorrect
                 ? "border-emerald-500/20 bg-emerald-500/5"
                 : "border-destructive/20 bg-destructive/5"
@@ -196,7 +206,7 @@ export default function AttemptResults() {
             </div>
 
             {/* Options */}
-            <div className="px-5 py-4 space-y-2">
+            <div className="px-4 sm:px-5 py-3 sm:py-4 space-y-2">
               {q.options.map((opt) => {
                 const wasSelected = q.submittedAnswers.includes(opt.key);
                 const isCorrect = q.correctAnswers.includes(opt.key);
@@ -212,7 +222,7 @@ export default function AttemptResults() {
                 }
 
                 return (
-                  <div key={opt.key} className={`rounded-lg border px-4 py-3 ${optCls}`}>
+                  <div key={opt.key} className={`rounded-lg border px-3 sm:px-4 py-2.5 sm:py-3 ${optCls}`}>
                     <div className="flex items-start gap-3">
                       <input
                         type={inputType}
@@ -243,7 +253,7 @@ export default function AttemptResults() {
 
             {/* Overall explanation */}
             {q.overallExplanation && (
-              <div className="mx-5 mb-4 rounded-lg border border-border bg-muted/50 px-4 py-3">
+              <div className="mx-4 sm:mx-5 mb-3 sm:mb-4 rounded-lg border border-border bg-muted/50 px-4 py-3">
                 <p className="text-xs font-medium text-muted-foreground mb-1">Explanation</p>
                 <p className="text-sm text-foreground leading-relaxed">{q.overallExplanation}</p>
               </div>

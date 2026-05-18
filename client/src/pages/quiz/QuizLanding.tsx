@@ -56,6 +56,17 @@ export default function QuizLanding() {
       .catch((err: unknown) => setMetaError(err instanceof Error ? err.message : "Quiz not found"));
   }, [quizSlug]);
 
+  // Notify parent frame of height changes so the iframe can auto-resize
+  useEffect(() => {
+    if (window.parent === window) return;
+    const send = () =>
+      window.parent.postMessage({ type: "quiz-resize", height: document.body.scrollHeight }, "*");
+    const ro = new ResizeObserver(send);
+    ro.observe(document.body);
+    send();
+    return () => ro.disconnect();
+  }, []);
+
   async function handleStart(e: React.FormEvent) {
     e.preventDefault();
     setStartError(null);
@@ -124,13 +135,13 @@ export default function QuizLanding() {
 
   if (stage === "register") {
     return (
-      <div className="relative flex min-h-screen flex-col items-center justify-center bg-background p-6">
+      <div className="relative flex min-h-screen flex-col items-center justify-center bg-background px-4 py-10 sm:p-6">
         <div className="absolute right-4 top-4">
           <ThemeToggle />
         </div>
         <div className="w-full max-w-md">
           <div className="mb-8 text-center">
-            <h1 className="text-2xl font-bold text-foreground mb-2">{meta.title}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-2">{meta.title}</h1>
             <p className="text-sm text-muted-foreground">
               {meta.totalQuestionsToDisplay} questions
               {meta.questionCount > meta.totalQuestionsToDisplay
@@ -180,13 +191,13 @@ export default function QuizLanding() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card px-6 py-4">
+      <header className="border-b border-border bg-card px-4 sm:px-6 py-3 sm:py-4">
         <div className="mx-auto max-w-2xl">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-foreground">{meta.title}</span>
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-muted-foreground tabular-nums">
-                {answeredCount} / {totalQ} answered
+          <div className="flex items-center justify-between gap-2 mb-2.5">
+            <span className="text-sm font-medium text-foreground truncate min-w-0">{meta.title}</span>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+                {answeredCount}/{totalQ}
               </span>
               <ThemeToggle />
             </div>
@@ -197,15 +208,15 @@ export default function QuizLanding() {
       </header>
 
       {/* Question body */}
-      <main className="flex-1 overflow-y-auto px-6 py-8">
+      <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="mx-auto max-w-2xl">
           <Badge variant={q.type === "MULTIPLE_CHOICE" ? "secondary" : "default"} className="mb-4">
             {q.type === "MULTIPLE_CHOICE" ? "Single answer" : "Select all that apply"}
           </Badge>
 
-          <h2 className="text-lg font-semibold text-foreground leading-snug mb-6">{q.text}</h2>
+          <h2 className="text-base sm:text-lg font-semibold text-foreground leading-snug mb-5">{q.text}</h2>
 
-          <div className="space-y-3" role={q.type === "MULTIPLE_CHOICE" ? "radiogroup" : "group"}>
+          <div className="space-y-2.5 sm:space-y-3" role={q.type === "MULTIPLE_CHOICE" ? "radiogroup" : "group"}>
             {q.options.map((opt) => {
               const selected = currentAnswers.includes(opt.key);
               const inputType = q.type === "MULTIPLE_CHOICE" ? "radio" : "checkbox";
@@ -214,7 +225,7 @@ export default function QuizLanding() {
                 <label
                   key={opt.key}
                   htmlFor={inputId}
-                  className={`flex cursor-pointer items-start gap-4 rounded-xl border p-4 transition-colors select-none ${
+                  className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 sm:p-4 transition-colors select-none ${
                     selected
                       ? "border-primary bg-primary/10"
                       : "border-border bg-card hover:border-primary/40 hover:bg-accent"
@@ -243,14 +254,10 @@ export default function QuizLanding() {
       </main>
 
       {/* Navigation footer */}
-      <footer className="border-t border-border bg-card px-6 py-4">
-        <div className="mx-auto max-w-2xl flex items-center justify-between gap-4">
-          <Button variant="outline" onClick={() => setCurrent((c) => Math.max(0, c - 1))} disabled={current === 0}>
-            <ChevronLeft className="h-4 w-4" /> Previous
-          </Button>
-
-          {/* Dot navigator */}
-          <div className="flex items-center gap-1.5 flex-wrap justify-center">
+      <footer className="border-t border-border bg-card px-4 sm:px-6 py-3 sm:py-4">
+        <div className="mx-auto max-w-2xl flex flex-col gap-3">
+          {/* Dot navigator — scrollable row so dots never push buttons */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 justify-center">
             {questions.map((q, i) => {
               const answered = (answers[q.id] ?? []).length > 0;
               const isCurrent = i === current;
@@ -258,26 +265,33 @@ export default function QuizLanding() {
                 <button
                   key={q.id}
                   onClick={() => setCurrent(i)}
-                  className={`rounded-full transition-all ${
+                  className="flex-shrink-0 flex h-6 w-6 items-center justify-center"
+                  title={`Question ${i + 1}${answered ? " (answered)" : ""}`}
+                >
+                  <span className={`rounded-full transition-all block ${
                     isCurrent
                       ? "h-2.5 w-2.5 bg-primary"
                       : answered
                       ? "h-2 w-2 bg-primary/60"
-                      : "h-2 w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
-                  }`}
-                  title={`Question ${i + 1}${answered ? " (answered)" : ""}`}
-                />
+                      : "h-2 w-2 bg-muted-foreground/30"
+                  }`} />
+                </button>
               );
             })}
           </div>
 
-          {isLast ? (
-            <Button onClick={handleSubmit}>Submit Quiz</Button>
-          ) : (
-            <Button onClick={() => setCurrent((c) => Math.min(totalQ - 1, c + 1))}>
-              Next <ChevronRight className="h-4 w-4" />
+          <div className="flex items-center justify-between gap-3">
+            <Button variant="outline" onClick={() => setCurrent((c) => Math.max(0, c - 1))} disabled={current === 0} className="flex-1 sm:flex-none">
+              <ChevronLeft className="h-4 w-4" /> Previous
             </Button>
-          )}
+            {isLast ? (
+              <Button onClick={handleSubmit} className="flex-1 sm:flex-none">Submit Quiz</Button>
+            ) : (
+              <Button onClick={() => setCurrent((c) => Math.min(totalQ - 1, c + 1))} className="flex-1 sm:flex-none">
+                Next <ChevronRight className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
       </footer>
     </div>

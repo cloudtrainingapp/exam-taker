@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Trash2, ChevronRight, BookOpen, Check, Copy } from "lucide-react";
+import { Plus, Trash2, ChevronRight, BookOpen, Check, Copy, Code2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +45,17 @@ export default function Quizzes() {
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
+  const [embedSlug, setEmbedSlug] = useState<string | null>(null);
+  const [embedCopied, setEmbedCopied] = useState(false);
+
+  function copyEmbedCode(slug: string) {
+    const src = `${window.location.origin}/t/${slug}`;
+    const code = `<iframe\n  src="${src}"\n  width="100%"\n  height="700"\n  style="border:none;border-radius:12px;"\n  allow="clipboard-write"\n></iframe>\n<script>\nwindow.addEventListener('message', function(e) {\n  if (e.data?.type === 'quiz-resize') {\n    document.querySelector('iframe[src^="${src}"]').style.height = e.data.height + 'px';\n  }\n});\n<\\/script>`;
+    navigator.clipboard.writeText(code).then(() => {
+      setEmbedCopied(true);
+      setTimeout(() => setEmbedCopied(false), 1500);
+    });
+  }
 
   function copyQuizLink(e: React.MouseEvent, slug: string) {
     e.stopPropagation();
@@ -163,6 +174,9 @@ export default function Quizzes() {
                           View Details <ChevronRight className="h-3 w-3" />
                         </Button>
                       </Link>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => { setEmbedSlug(q.slug); setEmbedCopied(false); }} title="Embed quiz">
+                        <Code2 className="h-3.5 w-3.5" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => setDeleteId(q.id)}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -235,6 +249,44 @@ export default function Quizzes() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteId(null)}>Cancel</Button>
             <Button variant="destructive" onClick={() => deleteId && handleDelete(deleteId)}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Embed dialog */}
+      <Dialog open={!!embedSlug} onOpenChange={(open) => { if (!open) setEmbedSlug(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Embed Quiz</DialogTitle>
+            <DialogDescription>
+              Paste this snippet into any webpage to embed the quiz in an iframe. The iframe height auto-adjusts via postMessage.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg border border-border bg-muted/50 p-4 font-mono text-xs leading-relaxed text-foreground whitespace-pre overflow-x-auto">
+{`<iframe
+  src="${window.location.origin}/t/${embedSlug}"
+  width="100%"
+  height="700"
+  style="border:none;border-radius:12px;"
+  allow="clipboard-write"
+></iframe>
+<script>
+window.addEventListener('message', function(e) {
+  if (e.data?.type === 'quiz-resize') {
+    document.querySelector(
+      'iframe[src^="${window.location.origin}/t/${embedSlug}"]'
+    ).style.height = e.data.height + 'px';
+  }
+});
+</script>`}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEmbedSlug(null)}>Close</Button>
+            <Button onClick={() => embedSlug && copyEmbedCode(embedSlug)} className="gap-1.5">
+              {embedCopied
+                ? <><Check className="h-3.5 w-3.5" /> Copied!</>
+                : <><Copy className="h-3.5 w-3.5" /> Copy Code</>}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
