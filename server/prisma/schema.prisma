@@ -89,15 +89,18 @@ model Question {
 }
 
 model Attempt {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   userId         String
   quizId         String
   tenantId       String
-  slug           String   @unique
-  score          Float
-  totalCorrect   Int
-  totalQuestions Int
-  createdAt      DateTime @default(now())
+  slug           String    @unique
+  score          Float     @default(0)
+  totalCorrect   Int       @default(0)
+  totalQuestions Int       @default(0)
+  questionIds    Json      @default("[]")
+  answers        Json      @default("{}")
+  submittedAt    DateTime?
+  createdAt      DateTime  @default(now())
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)

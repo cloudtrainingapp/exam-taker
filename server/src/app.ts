@@ -5,6 +5,7 @@ import { tenantResolver } from "./middleware/tenantResolver";
 import authRouter from "./routes/auth";
 import superAdminRouter from "./routes/superAdmin";
 import adminRouter from "./routes/admin";
+import quizRouter from "./routes/quiz";
 
 dotenv.config();
 
@@ -57,5 +58,8 @@ app.use("/api/superadmin", superAdminRouter);
 
 // Admin — all routes require an ADMIN JWT scoped to req.tenantId
 app.use("/api/admin", adminRouter);
+
+// Public quiz-taking — tenant-scoped, no auth required
+app.use("/api/t", quizRouter);
 
 export default app;

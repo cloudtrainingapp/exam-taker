@@ -100,7 +100,8 @@ export async function bulkCreateQuestions(req: Request, res: Response): Promise<
   }
 
   await prisma.question.createMany({
-    data: parsed.map((p) => ({ quizId, ...(p as { data: Record<string, unknown> }).data })),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    data: parsed.map((p) => ({ quizId, ...(p as any).data })) as any,
   });
 
   const count = parsed.length;

@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE "Attempt" ADD COLUMN     "answers" JSONB NOT NULL DEFAULT '{}',
+ADD COLUMN     "questionIds" JSONB NOT NULL DEFAULT '[]',
+ADD COLUMN     "submittedAt" TIMESTAMP(3),
+ALTER COLUMN "score" SET DEFAULT 0,
+ALTER COLUMN "totalCorrect" SET DEFAULT 0,
+ALTER COLUMN "totalQuestions" SET DEFAULT 0;
