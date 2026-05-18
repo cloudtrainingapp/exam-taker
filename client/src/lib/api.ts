@@ -18,7 +18,8 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   if (!res.ok) {
     const payload = await res.json().catch(() => ({}));
-    throw Object.assign(new Error(payload.error ?? res.statusText), { status: res.status });
+    const message = payload?.error?.message ?? payload?.error ?? res.statusText;
+    throw Object.assign(new Error(typeof message === "string" ? message : JSON.stringify(message)), { status: res.status });
   }
 
   return res.json() as Promise<T>;

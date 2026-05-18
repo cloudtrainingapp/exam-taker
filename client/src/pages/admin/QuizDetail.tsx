@@ -342,22 +342,83 @@ function QuestionPanel({ quizId, editing, onSave, onClose }: QuestionPanelProps)
 // ─── CSV Import ────────────────────────────────────────────────────────────────
 
 const CSV_TEMPLATE_HEADERS = [
-  "text", "type", "option1", "option2", "option3", "option4", "option5", "option6",
-  "explanation1", "explanation2", "explanation3", "explanation4", "explanation5", "explanation6",
-  "correctAnswers", "overallExplanation", "domain",
+  "Question", "Question Type",
+  "Answer Option 1", "Explanation 1",
+  "Answer Option 2", "Explanation 2",
+  "Answer Option 3", "Explanation 3",
+  "Answer Option 4", "Explanation 4",
+  "Answer Option 5", "Explanation 5",
+  "Answer Option 6", "Explanation 6",
+  "Correct Answers", "Overall Explanation", "Domain",
 ];
 
 function downloadTemplate() {
-  const row = [
-    "What is 2+2?", "MULTIPLE_CHOICE", "3", "4", "5", "", "", "",
-    "", "Correct", "", "", "", "", "B", "Basic arithmetic", "Math",
+  const rows = [
+    [
+      "What is 2+2?", "multiple-choice",
+      "3", "",
+      "4", "This is the correct answer",
+      "5", "",
+      "", "", "", "", "", "",
+      "2", "Basic arithmetic", "Math",
+    ],
+    [
+      "Which are primary colors?", "multi-select",
+      "Red", "A primary color",
+      "Green", "",
+      "Blue", "A primary color",
+      "Purple", "",
+      "", "", "", "", "",
+      "1,3", "Red and Blue are primary colors", "Art",
+    ],
   ];
-  const csv = [CSV_TEMPLATE_HEADERS.join(","), row.join(",")].join("\n");
+  const csv = [CSV_TEMPLATE_HEADERS.join(","), ...rows.map((r) => r.join(","))].join("\n");
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url; a.download = "questions-template.csv"; a.click();
   URL.revokeObjectURL(url);
+}
+
+function normaliseQuestionType(raw: string): string {
+  return raw.trim().toUpperCase().replace(/-/g, "_");
+}
+
+function nullIfEmpty(v: string | undefined): string | null {
+  return v !== undefined && v.trim() !== "" ? v.trim() : null;
+}
+
+function remapCsvRow(row: Record<string, string>): Record<string, unknown> {
+  const correctRaw = (row["Correct Answers"] ?? "").trim();
+  const correctAnswers = correctRaw
+    .split(",")
+    .map((n) => {
+      const idx = parseInt(n.trim(), 10);
+      return !isNaN(idx) && idx >= 1 && idx <= 6 ? optionLabel(idx - 1) : null;
+    })
+    .filter((v): v is string => v !== null)
+    .sort()
+    .join(",");
+
+  return {
+    text: row["Question"] ?? "",
+    type: normaliseQuestionType(row["Question Type"] ?? ""),
+    option1: nullIfEmpty(row["Answer Option 1"]),
+    option2: nullIfEmpty(row["Answer Option 2"]),
+    option3: nullIfEmpty(row["Answer Option 3"]),
+    option4: nullIfEmpty(row["Answer Option 4"]),
+    option5: nullIfEmpty(row["Answer Option 5"]),
+    option6: nullIfEmpty(row["Answer Option 6"]),
+    explanation1: nullIfEmpty(row["Explanation 1"]),
+    explanation2: nullIfEmpty(row["Explanation 2"]),
+    explanation3: nullIfEmpty(row["Explanation 3"]),
+    explanation4: nullIfEmpty(row["Explanation 4"]),
+    explanation5: nullIfEmpty(row["Explanation 5"]),
+    explanation6: nullIfEmpty(row["Explanation 6"]),
+    correctAnswers,
+    overallExplanation: row["Overall Explanation"] ?? "",
+    domain: nullIfEmpty(row["Domain"]),
+  };
 }
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
@@ -458,9 +519,10 @@ export default function QuizDetail() {
       skipEmptyLines: true,
       complete: async (results) => {
         try {
+          const rows = (results.data as Record<string, string>[]).map(remapCsvRow);
           const { imported } = await api.post<{ imported: number }>(
             `/admin/quizzes/${quiz.id}/questions/bulk`,
-            results.data,
+            rows,
             { headers: authHeader() }
           );
 
