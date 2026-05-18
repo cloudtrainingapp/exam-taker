@@ -39,3 +39,62 @@ export async function getDashboardStats(req: Request, res: Response): Promise<vo
     recentAttempts,
   });
 }
+
+export async function listAttempts(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId!;
+  const PAGE_SIZE = 25;
+
+  const page   = Math.max(1, parseInt(req.query["page"]   as string) || 1);
+  const quizId = (req.query["quizId"] as string) || undefined;
+  const search = (req.query["search"] as string)?.trim() || undefined;
+
+  const where = {
+    tenantId,
+    submittedAt: { not: null },
+    ...(quizId ? { quizId } : {}),
+    ...(search
+      ? {
+          OR: [
+            { user: { name:  { contains: search, mode: "insensitive" as const } } },
+            { user: { email: { contains: search, mode: "insensitive" as const } } },
+          ],
+        }
+      : {}),
+  };
+
+  const [total, attempts, quizzes] = await Promise.all([
+    prisma.attempt.count({ where }),
+    prisma.attempt.findMany({
+      where,
+      orderBy: { submittedAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      select: {
+        id: true,
+        slug: true,
+        score: true,
+        totalCorrect: true,
+        totalQuestions: true,
+        submittedAt: true,
+        quiz: { select: { id: true, title: true, slug: true } },
+        user: { select: { name: true, email: true } },
+      },
+    }),
+    prisma.quiz.findMany({
+      where: { tenantId },
+      select: { id: true, title: true },
+      orderBy: { title: "asc" },
+    }),
+  ]);
+
+  res.json({
+    attempts,
+    quizzes,
+    pagination: {
+      page,
+      pageSize: PAGE_SIZE,
+      total,
+      totalPages: Math.ceil(total / PAGE_SIZE),
+    },
+  });
+}
