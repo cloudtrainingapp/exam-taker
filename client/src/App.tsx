@@ -15,6 +15,7 @@ import AdminVerify from "./pages/admin/AdminVerify";
 import Quizzes from "./pages/admin/Quizzes";
 import QuizDetail from "./pages/admin/QuizDetail";
 import Results from "./pages/admin/Results";
+import Settings from "./pages/admin/Settings";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 
 import QuizLanding from "./pages/quiz/QuizLanding";
@@ -54,6 +55,7 @@ function TenantRoutes() {
           <Route path="/admin/quizzes" element={<Quizzes />} />
           <Route path="/admin/quizzes/:quizId" element={<QuizDetail />} />
           <Route path="/admin/results" element={<Results />} />
+          <Route path="/admin/settings" element={<Settings />} />
         </Route>
       </Route>
 

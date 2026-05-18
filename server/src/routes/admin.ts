@@ -3,6 +3,7 @@ import { requireAdmin } from "../middleware/requireAdmin";
 import { getDashboardStats, listAttempts } from "../controllers/adminController";
 import { listQuizzes, createQuiz, getQuiz, updateQuiz, deleteQuiz } from "../controllers/quizController";
 import { createQuestion, bulkCreateQuestions, updateQuestion, deleteQuestion } from "../controllers/questionController";
+import { getSettings, updateWorkspace, updateEmail, updatePassword } from "../controllers/settingsController";
 
 const router = Router();
 
@@ -13,6 +14,12 @@ router.get("/dashboard", getDashboardStats);
 
 // Results
 router.get("/results", listAttempts);
+
+// Settings
+router.get("/settings", getSettings);
+router.patch("/settings/workspace", updateWorkspace);
+router.patch("/settings/email", updateEmail);
+router.patch("/settings/password", updatePassword);
 
 // Quizzes
 router.get("/quizzes", listQuizzes);
