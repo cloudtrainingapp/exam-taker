@@ -7,3 +7,4 @@ CLAUDE.local.md
 .claude
 .env.production
 .env.*
+*.md.deploy
