@@ -6,3 +6,4 @@ dist
 CLAUDE.local.md
 .claude
 .env.production
+.env.*
