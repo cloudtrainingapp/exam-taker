@@ -7,7 +7,7 @@
 # so tenant resolution works exactly as it does via the Vite dev proxy.
 [[redirects]]
   from   = "/api/*"
-  to     = "https://easy-exam-api.onrender.com/api/:splat"
+  to     = "https://api.quiz.microskill.ai/api/:splat"
   status = 200
   force  = true
 
