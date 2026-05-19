@@ -13,7 +13,7 @@ export default defineConfig({
   server: {
     port: 5173,
     // Allow *.localhost, companydomain.local, and any other dev host
-    allowedHosts: "all",
+    allowedHosts: true,
     proxy: {
       "/api": {
         target: "http://localhost:5000",
