@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { SUPERADMIN_DEV_HOST, SUPERADMIN_HOST } from "./lib/constants";
+import { SUPERADMIN_DEV_HOST, SUPERADMIN_HOST, SUPERADMIN_MICROSKILL_HOST } from "./lib/constants";
 
 // Static: tiny guards with no page logic
 import SuperAdminProtectedRoute from "./components/SuperAdminProtectedRoute";
@@ -47,6 +47,7 @@ function PageSkeleton() {
 
 const isSuperAdmin =
   window.location.hostname === SUPERADMIN_HOST ||
+  window.location.hostname === SUPERADMIN_MICROSKILL_HOST ||
   window.location.hostname === SUPERADMIN_DEV_HOST;
 
 function SuperAdminRoutes() {
