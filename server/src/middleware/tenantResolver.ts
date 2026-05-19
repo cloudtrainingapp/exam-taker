@@ -3,8 +3,8 @@ import prisma from "../lib/prisma";
 
 // Hosts that grant the SUPERADMIN context (prod + local dev variants)
 const SUPERADMIN_BARE_HOSTS = new Set([
-  "super.quiz.cloudtraining.net",
-  "super.quiz.microskill.ai",
+  "superquiz.cloudtraining.net",
+  "superquiz.microskill.ai",
   "super.quiz.localhost",
   "super.quiz.local",
 ]);
