@@ -42,12 +42,16 @@ app.use(
 );
 
 app.use(express.json());
-app.use(tenantResolver);
 
 // ---------------------------------------------------------------------------
 // Routes
 // ---------------------------------------------------------------------------
+
+// Health check — must be registered before tenantResolver so it is reachable
+// from infra-level domains (e.g. api.quiz.microskill.ai) that are not tenants.
 app.use("/api/health", healthRouter);
+
+app.use(tenantResolver);
 
 // Auth (signup / verify / login — no additional auth middleware needed)
 app.use("/api/auth", authRouter);
