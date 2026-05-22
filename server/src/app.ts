@@ -6,6 +6,7 @@ import authRouter from "./routes/auth";
 import superAdminRouter from "./routes/superAdmin";
 import adminRouter from "./routes/admin";
 import quizRouter from "./routes/quiz";
+import healthRouter from "./routes/health";
 
 dotenv.config();
 
@@ -46,9 +47,7 @@ app.use(tenantResolver);
 // ---------------------------------------------------------------------------
 // Routes
 // ---------------------------------------------------------------------------
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok" });
-});
+app.use("/api/health", healthRouter);
 
 // Auth (signup / verify / login — no additional auth middleware needed)
 app.use("/api/auth", authRouter);

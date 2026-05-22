@@ -153,7 +153,7 @@ export default function AdminSignup() {
                     placeholder="acme"
                   />
                   <span className="flex items-center bg-muted px-3 text-sm text-muted-foreground border-l border-input whitespace-nowrap">
-                    .quiz.app
+                    .microskill.ai
                   </span>
                 </div>
               </div>
