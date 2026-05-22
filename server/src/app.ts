@@ -6,6 +6,7 @@ import authRouter from "./routes/auth";
 import superAdminRouter from "./routes/superAdmin";
 import adminRouter from "./routes/admin";
 import quizRouter from "./routes/quiz";
+import healthRouter from "./routes/health";
 
 dotenv.config();
 
@@ -41,14 +42,16 @@ app.use(
 );
 
 app.use(express.json());
-app.use(tenantResolver);
 
 // ---------------------------------------------------------------------------
 // Routes
 // ---------------------------------------------------------------------------
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok" });
-});
+
+// Health check — must be registered before tenantResolver so it is reachable
+// from infra-level domains (e.g. api.quiz.microskill.ai) that are not tenants.
+app.use("/api/health", healthRouter);
+
+app.use(tenantResolver);
 
 // Auth (signup / verify / login — no additional auth middleware needed)
 app.use("/api/auth", authRouter);
