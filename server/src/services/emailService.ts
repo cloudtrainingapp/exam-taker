@@ -1,4 +1,9 @@
+import dns from "dns";
 import nodemailer from "nodemailer";
+
+// Prefer IPv4 when resolving SMTP hostnames — some hosts resolve to IPv6
+// but the server's network may not have IPv6 outbound connectivity.
+dns.setDefaultResultOrder("ipv4first");
 
 interface OtpEmailArgs {
   to: string;
