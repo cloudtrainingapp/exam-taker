@@ -55,6 +55,7 @@ model Quiz {
   title                   String
   slug                    String
   totalQuestionsToDisplay Int
+  requireOtp              Boolean  @default(false)
   createdAt               DateTime @default(now())
 
   tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -62,6 +63,19 @@ model Quiz {
   attempts  Attempt[]
 
   @@unique([tenantId, slug])
+}
+
+model OtpVerification {
+  id        String    @id @default(cuid())
+  email     String
+  tenantId  String
+  quizSlug  String
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email, tenantId, quizSlug])
 }
 
 model Question {

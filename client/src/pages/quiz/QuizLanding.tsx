@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
@@ -16,6 +16,7 @@ interface QuizMeta {
   slug: string;
   totalQuestionsToDisplay: number;
   questionCount: number;
+  requireOtp: boolean;
 }
 
 interface QuizOption {
@@ -30,7 +31,9 @@ interface QuizQuestion {
   options: QuizOption[];
 }
 
-type Stage = "register" | "taking" | "submitting";
+type Stage = "register" | "otp" | "taking" | "submitting";
+
+const RESEND_COOLDOWN_SECS = 60;
 
 export default function QuizLanding() {
   const { quizSlug } = useParams<{ quizSlug: string }>();
@@ -41,13 +44,18 @@ export default function QuizLanding() {
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
   const [startError, setStartError] = useState<string | null>(null);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const [stage, setStage] = useState<Stage>("register");
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
   const [current, setCurrent] = useState(0);
   const [attemptSlug, setAttemptSlug] = useState("");
+
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!quizSlug) return;
@@ -67,9 +75,49 @@ export default function QuizLanding() {
     return () => ro.disconnect();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+    };
+  }, []);
+
+  function startCooldown() {
+    setResendCooldown(RESEND_COOLDOWN_SECS);
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown((s) => {
+        if (s <= 1) {
+          clearInterval(cooldownRef.current!);
+          cooldownRef.current = null;
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+  }
+
+  async function sendOtp() {
+    setSendingOtp(true);
+    setStartError(null);
+    try {
+      await api.post(`/t/${quizSlug}/request-otp`, { email });
+      startCooldown();
+    } catch (err: unknown) {
+      setStartError(err instanceof Error ? err.message : "Failed to send code");
+    } finally {
+      setSendingOtp(false);
+    }
+  }
+
   async function handleStart(e: React.FormEvent) {
     e.preventDefault();
     setStartError(null);
+
+    if (meta?.requireOtp) {
+      await sendOtp();
+      setStage("otp");
+      return;
+    }
+
     setStage("submitting");
     try {
       const res = await api.post<{ attemptSlug: string; questions: QuizQuestion[] }>(
@@ -84,6 +132,26 @@ export default function QuizLanding() {
     } catch (err: unknown) {
       setStartError(err instanceof Error ? err.message : "Failed to start quiz");
       setStage("register");
+    }
+  }
+
+  async function handleVerifyOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setStartError(null);
+    setStage("submitting");
+    try {
+      const res = await api.post<{ attemptSlug: string; questions: QuizQuestion[] }>(
+        `/t/${quizSlug}/start`,
+        { name, email, otp }
+      );
+      setAttemptSlug(res.attemptSlug);
+      setQuestions(res.questions);
+      setAnswers({});
+      setCurrent(0);
+      setStage("taking");
+    } catch (err: unknown) {
+      setStartError(err instanceof Error ? err.message : "Invalid or expired code");
+      setStage("otp");
     }
   }
 
@@ -170,10 +238,92 @@ export default function QuizLanding() {
                   <Label>Email Address</Label>
                   <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jane@example.com" />
                 </div>
-                <Button type="submit" className="w-full mt-2">Start Quiz</Button>
+                <Button type="submit" className="w-full mt-2" disabled={sendingOtp}>
+                  {sendingOtp
+                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending code…</>
+                    : meta.requireOtp ? "Send Verification Code" : "Start Quiz"
+                  }
+                </Button>
               </form>
             </CardContent>
           </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (stage === "otp") {
+    return (
+      <div className="relative flex min-h-screen flex-col items-center justify-center bg-background px-4 py-10 sm:p-6">
+        <div className="absolute right-4 top-4">
+          <ThemeToggle />
+        </div>
+        <div className="w-full max-w-md">
+          <div className="mb-8 text-center">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-2">{meta.title}</h1>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Check your email</CardTitle>
+              <CardDescription>
+                We sent a 6-digit code to <strong>{email}</strong>. Enter it below to start.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                {startError && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{startError}</AlertDescription>
+                  </Alert>
+                )}
+                <div className="space-y-1.5">
+                  <Label>Verification Code</Label>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="\d{6}"
+                    maxLength={6}
+                    required
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                    placeholder="123456"
+                    className="text-center text-xl tracking-widest font-mono"
+                    autoFocus
+                  />
+                </div>
+                <Button type="submit" className="w-full">
+                  Verify &amp; Start Quiz
+                </Button>
+                <div className="text-center">
+                  {resendCooldown > 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      Resend code in {resendCooldown}s
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={sendOtp}
+                      disabled={sendingOtp}
+                      className="text-xs text-primary underline-offset-2 hover:underline disabled:opacity-50"
+                    >
+                      {sendingOtp ? "Sending…" : "Resend code"}
+                    </button>
+                  )}
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={() => { setStage("register"); setStartError(null); setOtp(""); }}
+              className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+            >
+              ← Use a different email
+            </button>
+          </div>
         </div>
       </div>
     );

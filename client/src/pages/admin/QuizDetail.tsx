@@ -44,6 +44,7 @@ interface Quiz {
   title: string;
   slug: string;
   totalQuestionsToDisplay: number;
+  requireOtp: boolean;
   _count: { attempts: number };
   questions: Question[];
 }
@@ -432,6 +433,7 @@ export default function QuizDetail() {
   const [editSettings, setEditSettings] = useState(false);
   const [settingsTitle, setSettingsTitle] = useState("");
   const [settingsTotal, setSettingsTotal] = useState("10");
+  const [settingsRequireOtp, setSettingsRequireOtp] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
 
@@ -463,6 +465,7 @@ export default function QuizDetail() {
         setQuiz(q);
         setSettingsTitle(q.title);
         setSettingsTotal(String(q.totalQuestionsToDisplay));
+        setSettingsRequireOtp(q.requireOtp);
       })
       .catch((err: unknown) => {
         if (err instanceof Error && err.message.includes("404")) setNotFound(true);
@@ -479,8 +482,9 @@ export default function QuizDetail() {
       const updated = await api.patch<Quiz>(`/admin/quizzes/${quiz.id}`, {
         title: settingsTitle,
         totalQuestionsToDisplay: Number(settingsTotal),
+        requireOtp: settingsRequireOtp,
       }, { headers: authHeader() });
-      setQuiz((prev) => prev ? { ...prev, title: updated.title, slug: updated.slug, totalQuestionsToDisplay: updated.totalQuestionsToDisplay } : prev);
+      setQuiz((prev) => prev ? { ...prev, title: updated.title, slug: updated.slug, totalQuestionsToDisplay: updated.totalQuestionsToDisplay, requireOtp: updated.requireOtp } : prev);
       setEditSettings(false);
     } catch (err: unknown) {
       setSettingsError(err instanceof Error ? err.message : "Failed to save");
@@ -599,8 +603,17 @@ export default function QuizDetail() {
                   <Input type="number" required min={1} value={settingsTotal} onChange={(e) => setSettingsTotal(e.target.value)} />
                 </div>
               </div>
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={settingsRequireOtp}
+                  onChange={(e) => setSettingsRequireOtp(e.target.checked)}
+                  className="h-4 w-4 accent-primary cursor-pointer"
+                />
+                <span className="text-sm text-foreground">Require email OTP to start</span>
+              </label>
               <div className="flex gap-3">
-                <Button type="button" variant="outline" onClick={() => { setEditSettings(false); setSettingsError(null); setSettingsTitle(quiz.title); setSettingsTotal(String(quiz.totalQuestionsToDisplay)); }}>
+                <Button type="button" variant="outline" onClick={() => { setEditSettings(false); setSettingsError(null); setSettingsTitle(quiz.title); setSettingsTotal(String(quiz.totalQuestionsToDisplay)); setSettingsRequireOtp(quiz.requireOtp); }}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={savingSettings}>
@@ -617,6 +630,7 @@ export default function QuizDetail() {
                   <span>{quiz.questions.length} questions</span>
                   <span>Shows {quiz.totalQuestionsToDisplay} per attempt</span>
                   <span>{quiz._count.attempts} attempt{quiz._count.attempts !== 1 ? "s" : ""}</span>
+                  {quiz.requireOtp && <Badge variant="outline" className="text-xs">OTP required</Badge>}
                 </div>
               </div>
               <div className="flex items-center gap-2">

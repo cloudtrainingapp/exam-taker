@@ -1,0 +1,14 @@
+<iframe
+  src="http://testspace.localhost:5173/t/test-quiz"
+  width="100%"
+  height="700"
+  style="border:none;border-radius:12px;"
+  allow="clipboard-write"
+></iframe>
+<script>
+window.addEventListener('message', function(e) {
+  if (e.data?.type === 'quiz-resize') {
+    document.querySelector('iframe[src^="http://testspace.localhost:5173/t/test-quiz"]').style.height = e.data.height + 'px';
+  }
+});
+</script>

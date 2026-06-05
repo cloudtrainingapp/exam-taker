@@ -40,6 +40,7 @@ export default function Quizzes() {
   const [showCreate, setShowCreate] = useState(false);
   const [title, setTitle] = useState("");
   const [total, setTotal] = useState("10");
+  const [requireOtp, setRequireOtp] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
@@ -83,10 +84,11 @@ export default function Quizzes() {
       const quiz = await api.post<Quiz>("/admin/quizzes", {
         title,
         totalQuestionsToDisplay: Number(total),
+        requireOtp,
       }, { headers: authHeader() });
       setQuizzes((p) => [quiz, ...p]);
       setShowCreate(false);
-      setTitle(""); setTotal("10");
+      setTitle(""); setTotal("10"); setRequireOtp(false);
     } catch (err: unknown) {
       setCreateError(err instanceof Error ? err.message : "Failed to create quiz");
     } finally {
@@ -190,7 +192,7 @@ export default function Quizzes() {
       </Card>
 
       {/* Create dialog */}
-      <Dialog open={showCreate} onOpenChange={(open) => { setShowCreate(open); if (!open) setCreateError(null); }}>
+      <Dialog open={showCreate} onOpenChange={(open) => { setShowCreate(open); if (!open) { setCreateError(null); setRequireOtp(false); } }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>New Quiz</DialogTitle>
@@ -225,6 +227,15 @@ export default function Quizzes() {
               />
               <p className="text-xs text-muted-foreground">A random subset of this size is shown each time.</p>
             </div>
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={requireOtp}
+                onChange={(e) => setRequireOtp(e.target.checked)}
+                className="h-4 w-4 accent-primary cursor-pointer"
+              />
+              <span className="text-sm text-foreground">Require email OTP to start</span>
+            </label>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => { setShowCreate(false); setCreateError(null); }}>
                 Cancel
