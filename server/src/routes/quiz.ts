@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { getQuizInfo, startAttempt, submitAttempt, getAttemptResults } from "../controllers/quizTakingController";
+import { getQuizInfo, requestOtp, startAttempt, submitAttempt, getAttemptResults } from "../controllers/quizTakingController";
 
 const router = Router();
 
@@ -10,6 +10,7 @@ router.use((_req: Request, res: Response, next: NextFunction) => {
 });
 
 router.get("/:slug", getQuizInfo);
+router.post("/:slug/request-otp", requestOtp);
 router.post("/:slug/start", startAttempt);
 router.post("/:slug/:attemptSlug/submit", submitAttempt);
 router.get("/:slug/:attemptSlug", getAttemptResults);

@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import crypto from "crypto";
 import prisma from "../lib/prisma";
+import { generateOtp, verifyOtp, RateLimitError } from "../services/otpService";
+import { sendOtpEmail } from "../services/emailService";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -65,12 +67,53 @@ export async function getQuizInfo(req: Request, res: Response): Promise<void> {
     slug: quiz.slug,
     totalQuestionsToDisplay: quiz.totalQuestionsToDisplay,
     questionCount: quiz._count.questions,
+    requireOtp: quiz.requireOtp,
   });
+}
+
+export async function requestOtp(req: Request, res: Response): Promise<void> {
+  const slug = req.params["slug"] as string;
+  const { email } = req.body as Record<string, unknown>;
+
+  if (typeof email !== "string" || !email.trim()) {
+    res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "email is required" } });
+    return;
+  }
+
+  const quiz = await prisma.quiz.findFirst({
+    where: { tenantId: req.tenantId!, slug },
+    include: { tenant: { select: { name: true } } },
+  });
+
+  if (!quiz) {
+    res.status(404).json({ error: { code: "NOT_FOUND", message: "Quiz not found" } });
+    return;
+  }
+
+  if (!quiz.requireOtp) {
+    res.status(400).json({ error: { code: "OTP_NOT_REQUIRED", message: "This quiz does not require OTP verification" } });
+    return;
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  try {
+    const code = await generateOtp(normalizedEmail, req.tenantId!, slug);
+    await sendOtpEmail({ to: normalizedEmail, otp: code, quizTitle: quiz.title, tenantName: quiz.tenant.name });
+    res.json({ sent: true });
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      res.status(429).json({ error: { code: "RATE_LIMITED", message: err.message } });
+      return;
+    }
+    console.error("[requestOtp] Failed to send OTP email:", err);
+    res.status(502).json({ error: { code: "EMAIL_FAILED", message: "Failed to send verification code. Please try again." } });
+  }
 }
 
 export async function startAttempt(req: Request, res: Response): Promise<void> {
   const slug = req.params["slug"] as string;
-  const { name, email } = req.body as Record<string, unknown>;
+  const { name, email, otp } = req.body as Record<string, unknown>;
 
   if (typeof name !== "string" || !name.trim()) {
     res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "name is required" } });
@@ -80,6 +123,8 @@ export async function startAttempt(req: Request, res: Response): Promise<void> {
     res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "email is required" } });
     return;
   }
+
+  const normalizedEmail = email.trim().toLowerCase();
 
   const quiz = await prisma.quiz.findFirst({
     where: { tenantId: req.tenantId!, slug },
@@ -99,6 +144,18 @@ export async function startAttempt(req: Request, res: Response): Promise<void> {
     return;
   }
 
+  if (quiz.requireOtp) {
+    if (typeof otp !== "string" || !otp.trim()) {
+      res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "otp is required" } });
+      return;
+    }
+    const valid = await verifyOtp(normalizedEmail, req.tenantId!, slug, otp.trim());
+    if (!valid) {
+      res.status(401).json({ error: { code: "OTP_INVALID", message: "Invalid or expired verification code" } });
+      return;
+    }
+  }
+
   if (quiz.questions.length === 0) {
     res.status(400).json({ error: { code: "NO_QUESTIONS", message: "This quiz has no questions yet" } });
     return;
@@ -107,7 +164,6 @@ export async function startAttempt(req: Request, res: Response): Promise<void> {
   const shuffled = shuffleArray(quiz.questions);
   const selected = shuffled.slice(0, Math.min(quiz.totalQuestionsToDisplay, shuffled.length));
 
-  const normalizedEmail = email.trim().toLowerCase();
   let user = await prisma.user.findFirst({
     where: { email: normalizedEmail, tenantId: req.tenantId! },
   });

@@ -27,7 +27,7 @@ export async function listQuizzes(req: Request, res: Response): Promise<void> {
 }
 
 export async function createQuiz(req: Request, res: Response): Promise<void> {
-  const { title, totalQuestionsToDisplay } = req.body as Record<string, unknown>;
+  const { title, totalQuestionsToDisplay, requireOtp } = req.body as Record<string, unknown>;
 
   if (typeof title !== "string" || !title.trim()) {
     res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "title is required" } });
@@ -43,7 +43,13 @@ export async function createQuiz(req: Request, res: Response): Promise<void> {
   const slug = await uniqueSlug(req.tenantId!, toSlug(title));
 
   const quiz = await prisma.quiz.create({
-    data: { tenantId: req.tenantId!, title: title.trim(), slug, totalQuestionsToDisplay: total },
+    data: {
+      tenantId: req.tenantId!,
+      title: title.trim(),
+      slug,
+      totalQuestionsToDisplay: total,
+      requireOtp: requireOtp === true,
+    },
     include: { _count: { select: { questions: true, attempts: true } } },
   });
 
@@ -71,7 +77,7 @@ export async function getQuiz(req: Request, res: Response): Promise<void> {
 
 export async function updateQuiz(req: Request, res: Response): Promise<void> {
   const quizId = req.params["quizId"] as string;
-  const { title, totalQuestionsToDisplay } = req.body as Record<string, unknown>;
+  const { title, totalQuestionsToDisplay, requireOtp } = req.body as Record<string, unknown>;
 
   const quiz = await prisma.quiz.findFirst({ where: { id: quizId, tenantId: req.tenantId! } });
   if (!quiz) {
@@ -81,6 +87,7 @@ export async function updateQuiz(req: Request, res: Response): Promise<void> {
 
   const newTitle = typeof title === "string" && title.trim() ? title.trim() : undefined;
   const newTotal = totalQuestionsToDisplay !== undefined ? Number(totalQuestionsToDisplay) : undefined;
+  const newRequireOtp = typeof requireOtp === "boolean" ? requireOtp : undefined;
 
   if (newTotal !== undefined && (!Number.isInteger(newTotal) || newTotal < 1)) {
     res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "totalQuestionsToDisplay must be a positive integer" } });
@@ -94,6 +101,7 @@ export async function updateQuiz(req: Request, res: Response): Promise<void> {
     data: {
       ...(newTitle ? { title: newTitle, slug } : {}),
       ...(newTotal !== undefined ? { totalQuestionsToDisplay: newTotal } : {}),
+      ...(newRequireOtp !== undefined ? { requireOtp: newRequireOtp } : {}),
     },
     include: { _count: { select: { questions: true, attempts: true } } },
   });
